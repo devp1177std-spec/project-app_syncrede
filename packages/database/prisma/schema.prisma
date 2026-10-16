@@ -1,0 +1,261 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum FollowRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum PostType {
+  IMAGE
+  VIDEO
+  ALBUM
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// User Model (Integrated with Better Auth & App Profile)
+model User {
+  id                    String    @id @default(cuid())
+  name                  String
+  email                 String    @unique
+  emailVerified         Boolean   @default(false)
+  image                 String?
+  coverImage            String?
+  username              String?   @unique
+  displayUsername       String?
+  bio                   String?
+  location              String?
+  website               String?
+  isVerified            Boolean   @default(false)
+  isPrivate             Boolean   @default(false)
+  role                  String    @default("user") // "user" | "admin"
+
+  // Denormalized counters
+  followerCount         Int       @default(0)
+  followingCount        Int       @default(0)
+  postCount             Int       @default(0)
+  
+  termsAcceptedAt       DateTime?
+  termsVersion          String?
+  onboardingCompletedAt DateTime?
+  onboardingSkipped     Boolean   @default(false)
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  sessions              Session[]
+  accounts              Account[]
+
+  // Social Relations
+  following             Follow[]               @relation("UserFollowing")
+  followers             Follow[]               @relation("UserFollowers")
+  sentFollowRequests     FollowRequest[]        @relation("UserSentRequests")
+  receivedFollowRequests FollowRequest[]        @relation("UserReceivedRequests")
+  blockedUsers          Block[]                @relation("UserBlocks")
+  blockedByUsers        Block[]                @relation("UserBlockedBy")
+  mutedUsers            Mute[]                 @relation("UserMutes")
+  mutedByUsers          Mute[]                 @relation("UserMutedBy")
+  posts                 Post[]
+  verificationRequests  VerificationRequest[]
+
+  @@map("users")
+}
+
+// Better Auth Session Model
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// Better Auth Account Model (for credentials and OAuth providers)
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+// Better Auth Verification Token Model
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+  @@map("verifications")
+}
+
+// Social Follow Model
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@index([followerId, createdAt(sort: Desc)], map: "follows_follower_created_desc_idx")
+  @@map("follows")
+}
+
+// Follow Request Model for Private Accounts
+model FollowRequest {
+  id          String              @id @default(cuid())
+  senderId    String
+  receiverId  String
+  status      FollowRequestStatus @default(PENDING)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  sender      User                @relation("UserSentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User                @relation("UserReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId, status])
+  @@index([senderId, status])
+  @@map("follow_requests")
+}
+
+// Block Model
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker   User     @relation("UserBlocks", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("UserBlockedBy", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("blocks")
+}
+
+// Mute Model
+model Mute {
+  id        String   @id @default(cuid())
+  muterId   String
+  mutedId   String
+  createdAt DateTime @default(now())
+
+  muter     User     @relation("UserMutes", fields: [muterId], references: [id], onDelete: Cascade)
+  muted     User     @relation("UserMutedBy", fields: [mutedId], references: [id], onDelete: Cascade)
+
+  @@unique([muterId, mutedId])
+  @@index([muterId])
+  @@map("mutes")
+}
+
+// Post Model
+model Post {
+  id           String      @id @default(cuid())
+  authorId     String
+  caption      String?
+  type         PostType    @default(IMAGE)
+  likeCount    Int         @default(0)
+  commentCount Int         @default(0)
+  shareCount   Int         @default(0)
+  viewCount    Int         @default(0)
+  score        Float       @default(0) // Denormalized engagement score for popular ranking
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  author       User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  media        PostMedia[]
+
+  @@index([authorId, createdAt(sort: Desc)], map: "posts_author_created_desc_idx")
+  @@index([authorId, score(sort: Desc)], map: "posts_author_score_desc_idx")
+  @@index([authorId, createdAt(sort: Asc)], map: "posts_author_created_asc_idx")
+  @@map("posts")
+}
+
+// Post Media Model
+model PostMedia {
+  id           String    @id @default(cuid())
+  postId       String
+  url          String
+  thumbnailUrl String?
+  type         MediaType @default(IMAGE)
+  order        Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  post         Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, order])
+  @@map("post_media")
+}
+
+// Verification Request Model
+model VerificationRequest {
+  id              String             @id @default(cuid())
+  userId          String
+  category        String             // "CREATOR" | "BUSINESS" | "PUBLIC_FIGURE" | "ORGANIZATION"
+  legalName       String
+  documentType    String             // "PASSPORT" | "NATIONAL_ID" | "BUSINESS_REGISTRATION"
+  documentUrl     String
+  additionalInfo  String?
+  status          VerificationStatus @default(PENDING)
+  rejectionReason String?
+  reviewedBy      String?            // Admin user ID
+  reviewedAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("verification_requests")
+}

@@ -30,7 +30,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({
-  placeholder = '',
+  placeholder = 'Search feed, creators, and tags...',
   onSearchSubmit,
   className = '',
 }: SearchBarProps) {

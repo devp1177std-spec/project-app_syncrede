@@ -511,7 +511,7 @@ export default function HomePage() {
       {/* 2. Search Bar with Smart Dropdown */}
       <div className="px-4 pt-1 pb-3 shrink-0">
         <SearchBar
-          placeholder=""
+          placeholder="Search feed, creators, and tags..."
           onSearchSubmit={(q) => setSearchQuery(q)}
         />
         {searchQuery && (

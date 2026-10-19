@@ -13,12 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { SearchBar } from '@/components/search-bar';
-
-interface Story {
-  id: string;
-  username: string;
-  image: string;
-}
+import { USER_STORIES } from '@/lib/stories-data';
 
 interface CommentItem {
   id: string;
@@ -50,17 +45,7 @@ interface Post {
   comments: CommentItem[];
 }
 
-const STORIES: Story[] = [
-  { id: '1', username: 'rosy_me', image: '/images/stories/story-rosy.jpg' },
-  { id: '2', username: 'ssm_2y', image: '/images/stories/story-samir.jpg' },
-  { id: '3', username: 'tham28', image: '/images/stories/story-thomas.jpg' },
-  { id: '4', username: 'clayclare', image: '/images/stories/story-clare.jpg' },
-  { id: '5', username: 'patyo', image: '/images/stories/story-patyo.jpg' },
-  { id: '6', username: 'sarahchen', image: '/images/stories/story-sarah.jpg' },
-  { id: '7', username: 'marcus_v', image: '/images/stories/story-marcus.jpg' },
-  { id: '8', username: 'elena_m', image: '/images/stories/story-elena.jpg' },
-  { id: '9', username: 'alex_dev', image: '/images/stories/story-alex.jpg' },
-];
+const STORIES = USER_STORIES;
 
 const INITIAL_POSTS: Post[] = [
   {
@@ -531,10 +516,11 @@ export default function HomePage() {
       {/* 3. Stories Row */}
       <div className="px-4 pb-2 flex items-start gap-2.5 overflow-x-auto no-scrollbar shrink-0">
         {filteredStories.map((story) => (
-          <div
+          <Link
             key={story.id}
+            href={`/stories/${story.username}`}
             className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group"
-            onClick={() => showToast(`Viewing @${story.username}'s story`)}
+            aria-label={`View @${story.username}'s story`}
           >
             <div className="w-[42px] h-[54px] rounded-[13px] border-2 border-blue-500 overflow-hidden shadow-xs group-hover:scale-105 group-active:scale-95 transition-transform shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -547,7 +533,7 @@ export default function HomePage() {
             <span className="text-[10px] text-slate-500 tracking-tight font-normal truncate max-w-[46px] text-center">
               {story.username}
             </span>
-          </div>
+          </Link>
         ))}
       </div>
 

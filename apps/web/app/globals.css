@@ -102,3 +102,23 @@ body::-webkit-scrollbar,
   width: 0px !important;
   height: 0px !important;
 }
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-90px) scale(1.25);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-180px) scale(1);
+  }
+}
+
+.animate-float-up {
+  animation: floatUp 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+

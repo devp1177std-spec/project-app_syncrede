@@ -15,6 +15,10 @@ export const notificationsQueue = new Queue('notifications', {
   connection: redisConnection,
 });
 
+export const storiesQueue = new Queue('stories', {
+  connection: redisConnection,
+});
+
 export function setupWorkers() {
   const videoWorker = new Worker(
     'video-processing',
@@ -54,6 +58,30 @@ export function setupWorkers() {
     { connection: redisConnection },
   );
 
+  const storiesWorker = new Worker(
+    'stories',
+    async (job: Job) => {
+      console.log(`[Worker] Stories job ${job.id} (${job.name}):`, job.data);
+      if (job.name === 'story:cleanup_expired') {
+        try {
+          const { prisma } = await import('@social/database');
+          const result = await prisma.story.deleteMany({
+            where: {
+              expiresAt: { lte: new Date() },
+            },
+          });
+          console.log(`[Worker] Cleaned up ${result.count} expired stories.`);
+          return { status: 'cleaned', count: result.count };
+        } catch (err) {
+          console.error('[Worker] Error purging expired stories:', err);
+          throw err;
+        }
+      }
+      return { status: 'ignored' };
+    },
+    { connection: redisConnection },
+  );
+
   videoWorker.on('completed', (job) => {
     console.log(`[Worker] Video job ${job.id} completed successfully`);
   });
@@ -62,5 +90,9 @@ export function setupWorkers() {
     console.log(`[Worker] Notification job ${job.id} completed successfully`);
   });
 
-  return { videoWorker, notificationsWorker };
+  storiesWorker.on('completed', (job) => {
+    console.log(`[Worker] Stories job ${job.id} completed successfully`);
+  });
+
+  return { videoWorker, notificationsWorker, storiesWorker };
 }

@@ -43,7 +43,7 @@ social-media-app/
 | **Background Queue** | BullMQ (`bullmq` ^5.81.5), `@nestjs/bullmq` | Asynchronous job dispatching and worker service |
 | **Storage / Media** | AWS SDK S3 (`@aws-sdk/client-s3`, presigner) | Presigned upload/download URLs for Cloudflare R2 / S3 / MinIO |
 | **Logging & Docs** | `nestjs-pino`, `pino-pretty`, `@nestjs/swagger` | Structured logging with request IDs, OpenAPI at `/api/docs` |
-| **Testing** | Jest 29, `ts-jest` | 7 test suites (51 unit tests) in `apps/api` |
+| **Testing** | Jest 29, `ts-jest` | 8 test suites (60 unit tests) in `apps/api` |
 
 ---
 
@@ -63,6 +63,9 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
   - `PostMedia` (`post_media`): `postId`, `url`, `thumbnailUrl`, `type`, `order`.
 - **Identity Verification**:
   - `VerificationRequest` (`verification_requests`): Verification badge submissions with `category`, `legalName`, `documentType`, `documentUrl`, `status` (`PENDING`, `APPROVED`, `REJECTED`), reviewed by admin ID.
+- **User Stories & Analytics**:
+  - `Story` (`stories`): 24-hour disappearing content with `userId`, `mediaUrl`, `mediaType` (`IMAGE` | `VIDEO`), `duration`, `caption`, `location`, `linkText`, `linkUrl`, `expiresAt`.
+  - `StoryView` (`story_views`): View receipts and analytics tracking viewer ID, story ID, and unique composite `[storyId, viewerId]`.
 
 *Note on migrations:* `packages/database/prisma/` contains `schema.prisma` but no `migrations/` directory. Schema synchronization is currently done via `npm run db:push`.
 
@@ -105,9 +108,16 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
    - `DELETE /api/users/:username/mute`: Removes from Redis mute set.
    - `POST /api/admin/verifications/:id/approve`: Admin route; sets `isVerified = true` on user, marks request approved, dispatches notification job.
    - `POST /api/admin/verifications/:id/reject`: Admin route; marks request rejected with reason.
-4. **`StorageModule`** (`/api/storage`):
+4. **`StoriesModule`** (`/api/stories`):
+   - `GET /api/stories/feed`: Retrieves unexpired stories for current viewer's followed accounts + self (or public discovery), sorted by unseen status.
+   - `GET /api/stories/user/:username`: Retrieves unexpired stories for a specific username with view receipts.
+   - `POST /api/stories`: Authenticated story creation endpoint (24-hour expiration).
+   - `POST /api/stories/:id/view`: Records a view on a story for the authenticated user.
+   - `DELETE /api/stories/:id`: Deletes a story (creator or admin).
+   - `GET /api/stories/:id/views`: Retrieves view receipts and viewer list for story creator.
+5. **`StorageModule`** (`/api/storage`):
    - `POST /api/storage/presigned-url`: Generates S3/R2 presigned upload URL and public URL.
-5. **`BullMqModule`** (`apps/api/src/bullmq/`):
+6. **`BullMqModule`** (`apps/api/src/bullmq/`):
    - Registers `video-processing` and `notifications` queues connecting to Redis.
 
 ---
@@ -118,6 +128,7 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 - Subscribes to BullMQ queues on Redis:
   - **`video-processing`**: Skeleton worker returning `{ status: 'completed' }` (FFmpeg transcoding placeholder).
   - **`notifications`**: Dispatches logs for `notification:new_follower`, `notification:follow_request`, `notification:follow_accepted`, `notification:verification_approved`, `notification:verification_rejected`. (Push notification delivery via Web Push/FCM is not yet connected).
+  - **`stories`**: Worker executing `story:cleanup_expired` job to purge expired stories from PostgreSQL.
 
 ---
 
@@ -138,7 +149,9 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 | `/login` | `app/(auth)/login/page.tsx` | Functional | Calls API + localStorage dev fallback |
 | `/signup` | `app/(auth)/signup/page.tsx` | Functional | Live username check, calls API |
 | `/create-profile` | `app/(auth)/create-profile/page.tsx` | Functional | Step 2 onboarding, image cropper modal |
-| `/` | `app/(app)/page.tsx` | Interactive UI Prototype | **Hardcoded mock stories & posts (`INITIAL_POSTS`)** |
+| `/` | `app/(app)/page.tsx` | Interactive UI Prototype | Integrated story circles linked to `/stories/[username]`, mock posts (`INITIAL_POSTS`) |
+| `/stories` | `app/stories/page.tsx` | Functional | Full-screen story viewer default/query entrypoint (`?user=...`) |
+| `/stories/[username]` | `app/stories/[username]/page.tsx` | Functional | Full-screen Instagram-style story viewer for target user |
 | `/social` | `app/(app)/social/page.tsx` | Interactive UI Prototype | **Hardcoded mock chats, communities, bots, feed** |
 | `/market` | `app/(app)/market/page.tsx` | Incomplete Stub | Static placeholder view |
 | `/profile` | `app/(app)/profile/page.tsx` | Functional with Fallback | Calls API (`/api/users/:username`), falls back to `profile-mock-data.ts` |
@@ -147,16 +160,24 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 | `/chat` | `app/chat/page.tsx` | Prototype | Renders `ChatView` |
 | `/chat/[id]` | `app/chat/[id]/page.tsx` | Prototype | Hardcoded conversations in `chat-view.tsx`, simulated `setTimeout` replies |
 
+### User Stories Architecture (`apps/web/components/story-viewer.tsx` & `lib/stories-data.ts`)
+- **Full-Screen Dedicated Route**: Placed at `app/stories/[username]/page.tsx` outside `(app)` to prevent layout conflicts with `MobileShell` and `BottomTabBar`, presenting a dark immersive environment (`#060608`) with ambient desktop backdrop blur.
+- **Auto-Progression & Segmented Timers**: Segmented progress bars with 60fps `requestAnimationFrame` animation loops, advancing automatically between stories and users.
+- **Gestures & Controls**: Left/right tap zones, press-and-hold pause (with UI dimming), touch swipe gestures (down to close, left/right for adjacent users), and keyboard bindings (`Escape`, `ArrowLeft`, `ArrowRight`, `Space`).
+- **Interactive Story Actions**: Quick emoji reaction bursts with float-up animations, message reply input with pause on focus, like heart toggle, and share link generator.
+- **Data Layer**: Centralized in `apps/web/lib/stories-data.ts` exporting `USER_STORIES`, `getAllStoryGroups()`, `getStoryGroupByUsername()`, and `getAdjacentStoryUsers()`.
+
 ---
 
 ## 7. Confirmed Facts vs Assumptions
 
 ### Confirmed Facts
-- Turborepo pipelines (`typecheck` across all 8 packages and 51 unit tests in `apps/api`) compile and pass cleanly.
+- Turborepo pipelines (`typecheck` across all 8 packages and 60 unit tests in `apps/api`) compile and pass cleanly.
 - Authentication endpoints and session checks exist and are protected by Better Auth with database persistence in Prisma.
 - The User Profile and Social Graph APIs (`UsersService`) are fully implemented on the backend with Redis-backed presence, popular post ranking, follow approval transactions, and verification management.
+- The User Stories system is fully implemented end-to-end: Prisma schema (`Story` and `StoryView` models), REST endpoints in `apps/api` (`StoriesModule`), background 24-hour expiration worker in `apps/worker` (`storiesQueue`), typed API client (`api.stories`), and frontend story viewer (`StoryViewer`) integrated with home feed story circles.
 - Frontend profile viewing (`ProfileScreen`) is integrated with backend APIs but features built-in fallback to mock data when API calls fail or return no data.
-- The home feed (`/`), social directory (`/social`), and search (`/search`) pages currently use static local mock datasets and do not call backend post or search APIs.
+- The home feed posts (`/`), social directory (`/social`), and search (`/search`) pages currently use static local mock datasets and do not call backend post or search APIs.
 
 ### Assumptions (Pending Backend / Database Implementation)
 - Future posts feed is expected to be served via API rather than static arrays in `app/(app)/page.tsx`.
@@ -172,6 +193,7 @@ According to `README.md` and codebase verification:
 - [x] **Feature 0: Monorepo Foundation & Core Infrastructure** (Completed)
 - [x] **Feature 1: Authentication & User Accounts** (Completed on backend and frontend auth flows)
 - [x] **Feature 2: User Profiles & Follows System** (Completed on backend, profile UI integrated with mock fallback)
+- [x] **Feature 2.5: Instagram-Style User Stories (Full-Stack Completed)** (Completed Prisma schema, REST endpoints, BullMQ cleanup worker, view receipts, dedicated full-screen viewer, segmented progress timer, touch/swipe/keyboard navigation, reactions, and feed integration)
 - [ ] **Feature 3: Posts & Cloudflare R2 Media Uploads** (Backend has presigned URL service and schema; **missing Post CRUD endpoints and frontend post creation route**)
 - [ ] **Feature 4: Comments & Likes System** (Schema lacks `Comment` and `Like` tables; **no backend endpoints; frontend is local UI state only**)
 - [ ] **Feature 5: Activity Feed** (Feed algorithm, fan-out, and API endpoint not yet implemented)
@@ -224,7 +246,7 @@ npm run db:generate
 # Run full project typecheck across all workspaces
 npm run typecheck
 
-# Run tests (runs 7 test suites in apps/api)
+# Run tests (runs 8 test suites in apps/api)
 npm run test
 
 # Start development servers (Web on :3000, API on :4000, Worker concurrently)

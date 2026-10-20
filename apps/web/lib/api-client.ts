@@ -7,6 +7,10 @@ import {
   UserGridPostsResponse,
   FollowListResponse,
   FollowActionResult,
+  UserStoryGroupDto,
+  StoryDto,
+  CreateStoryDto,
+  StoryViewUserDto,
 } from '@social/types';
 import { OnboardingProfileInput, SignUpInput } from '@social/validation';
 
@@ -303,5 +307,41 @@ export const apiClient = {
       return fetchApi('api/health');
     },
   },
+
+  stories: {
+    async getFeed(): Promise<ApiResponse<UserStoryGroupDto[]>> {
+      return fetchApi<UserStoryGroupDto[]>('api/stories/feed');
+    },
+
+    async getByUsername(username: string): Promise<ApiResponse<UserStoryGroupDto>> {
+      return fetchApi<UserStoryGroupDto>(`api/stories/user/${encodeURIComponent(username)}`);
+    },
+
+    async create(dto: CreateStoryDto): Promise<ApiResponse<StoryDto>> {
+      return fetchApi<StoryDto>('api/stories', {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      });
+    },
+
+    async recordView(storyId: string): Promise<ApiResponse<{ viewed: boolean; storyId: string; viewedAt: string }>> {
+      return fetchApi<{ viewed: boolean; storyId: string; viewedAt: string }>(`api/stories/${encodeURIComponent(storyId)}/view`, {
+        method: 'POST',
+      });
+    },
+
+    async delete(storyId: string): Promise<ApiResponse<{ success: boolean; deletedStoryId: string }>> {
+      return fetchApi<{ success: boolean; deletedStoryId: string }>(`api/stories/${encodeURIComponent(storyId)}`, {
+        method: 'DELETE',
+      });
+    },
+
+    async getViewers(storyId: string): Promise<ApiResponse<StoryViewUserDto[]>> {
+      return fetchApi<StoryViewUserDto[]>(`api/stories/${encodeURIComponent(storyId)}/views`);
+    },
+  },
 };
+
+export const api = apiClient;
+
 

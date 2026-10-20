@@ -202,3 +202,53 @@ export interface VerificationRequestResponse {
   createdAt: string;
 }
 
+// User Story Entity & DTOs
+export type StoryMediaType = 'IMAGE' | 'VIDEO';
+
+export interface StoryDto {
+  id: string;
+  userId: string;
+  mediaUrl: string;
+  mediaType: StoryMediaType;
+  duration: number;
+  caption?: string | null;
+  location?: string | null;
+  linkText?: string | null;
+  linkUrl?: string | null;
+  viewCount: number;
+  hasViewed: boolean;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface UserStoryGroupDto {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  isVerified: boolean;
+  image: string;
+  hasUnseen: boolean;
+  stories: StoryDto[];
+}
+
+export interface CreateStoryDto {
+  mediaUrl: string;
+  mediaType?: StoryMediaType;
+  duration?: number;
+  caption?: string;
+  location?: string;
+  linkText?: string;
+  linkUrl?: string;
+}
+
+export interface StoryViewUserDto {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  viewedAt: string;
+}
+
+

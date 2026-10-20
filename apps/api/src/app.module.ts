@@ -12,6 +12,7 @@ import { StorageModule } from './storage/storage.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { StoriesModule } from './stories/stories.module';
 
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -71,6 +72,7 @@ import { RedisThrottlerStorageService } from './common/guards/redis-throttler-st
     HealthModule,
     AuthModule,
     UsersModule,
+    StoriesModule,
   ],
   providers: [
     {

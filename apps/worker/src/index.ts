@@ -22,6 +22,7 @@ async function main() {
     await Promise.allSettled([
       workers.videoWorker.close(),
       workers.notificationsWorker.close(),
+      workers.storiesWorker.close(),
     ]);
     await redisConnection.quit();
     console.log('[Worker Service] Shutdown complete.');

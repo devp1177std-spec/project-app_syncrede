@@ -172,10 +172,17 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 ## 7. Confirmed Facts vs Assumptions
 
 ### Confirmed Facts
-- Turborepo pipelines (`typecheck` across all 8 packages and 60 unit tests in `apps/api`) compile and pass cleanly.
+- Turborepo pipelines (`typecheck` across all 8 packages and 60 unit tests across 8 test suites in `apps/api`) compile and pass cleanly.
+- Production builds succeed with zero errors across `@social/web` (all 14 static and dynamic routes), `@social/api`, and `@social/worker`.
 - Authentication endpoints and session checks exist and are protected by Better Auth with database persistence in Prisma.
 - The User Profile and Social Graph APIs (`UsersService`) are fully implemented on the backend with Redis-backed presence, popular post ranking, follow approval transactions, and verification management.
-- The User Stories system is fully implemented end-to-end: Prisma schema (`Story` and `StoryView` models), REST endpoints in `apps/api` (`StoriesModule`), background 24-hour expiration worker in `apps/worker` (`storiesQueue`), typed API client (`api.stories`), and frontend story viewer (`StoryViewer`) integrated with home feed story circles.
+- The User Stories system is fully implemented end-to-end:
+  - **Prisma Schema**: `Story` (with 24h `expiresAt`, `mediaType`, `duration`, `caption`, `location`, `linkText`, `linkUrl`) and `StoryView` (`[storyId, viewerId]` composite unique index for view receipts).
+  - **REST API**: NestJS `StoriesModule` mounted at `/api/stories` providing `GET /feed`, `GET /user/:username`, `POST /`, `POST /:id/view`, `DELETE /:id`, and `GET /:id/views`.
+  - **Background Worker**: BullMQ queue (`stories`) and worker in `apps/worker` executing `story:cleanup_expired` to purge expired stories from PostgreSQL.
+  - **Typed API Client**: Extended `apiClient.stories` and exported `api` alias in `@social/web` with view receipt synchronization on story transition.
+  - **Full-Screen Viewer**: Implemented at `app/stories/[username]/page.tsx` outside `(app)` shell, featuring 60fps segmented progress bar, tap/swipe/keyboard navigation, press-and-hold pause with UI dimming, quick emoji reactions, and reply input.
+  - **Unit Test Coverage**: `apps/api/src/stories/stories.controller.spec.ts` testing all story endpoints and edge cases.
 - Frontend profile viewing (`ProfileScreen`) is integrated with backend APIs but features built-in fallback to mock data when API calls fail or return no data.
 - The home feed posts (`/`), social directory (`/social`), and search (`/search`) pages currently use static local mock datasets and do not call backend post or search APIs.
 
@@ -257,3 +264,33 @@ npm run dev --workspace=@social/web
 npm run dev --workspace=@social/api
 npm run dev --workspace=@social/worker
 ```
+
+---
+
+## 11. Git Branch & Verification Status
+
+### Active Branch: `story_page`
+
+### Recent Commits
+1. `6eaaef3`: `add story page`
+   - Added full-screen story viewer (`apps/web/components/story-viewer.tsx`).
+   - Added Next.js dynamic story routes (`apps/web/app/stories/[username]/page.tsx` and `app/stories/page.tsx`).
+   - Integrated story circles in home feed (`apps/web/app/(app)/page.tsx`) with creator story groups.
+   - Added mock story dataset (`apps/web/lib/stories-data.ts`) with 9 creator profiles matching feed posts.
+2. `7d94a97`: `feat(stories): complete backend API, database schema, and cleanup worker`
+   - Added `Story` and `StoryView` models to `packages/database/prisma/schema.prisma`.
+   - Added shared story types, DTOs, and Zod schemas in `packages/types` and `packages/validation`.
+   - Built `StoriesModule` (`StoriesController`, `StoriesService`, DTOs) in `apps/api` with full CRUD, view recording, and feed queries.
+   - Implemented BullMQ `storiesQueue` and `story:cleanup_expired` job in `apps/worker` to purge 24-hour expired stories.
+   - Extended `apiClient.stories` and exported `api` in `apps/web/lib/api-client.ts`.
+   - Added Jest unit tests for `StoriesController` (coverage for all 6 endpoints).
+
+### Verification Matrix
+- **Typecheck**: `npm run typecheck` passes cleanly across all 8 monorepo workspaces.
+- **Unit Tests**: `npm run test` passes with 8/8 suites and 60/60 unit tests green.
+- **Web Build**: `npm run build --workspace=@social/web` compiles all 14 static and dynamic routes.
+- **API Build**: `npm run build --workspace=@social/api` compiles NestJS production bundle.
+- **Worker Build**: `npm run build --workspace=@social/worker` compiles cleanly.
+
+### Pending Infrastructure Step
+- **Database Schema Push**: Once the PostgreSQL Docker container is running locally (`docker-compose up -d postgres` on port 5433), execute `npm run db:push` to sync the new `stories` and `story_views` tables with the live database.

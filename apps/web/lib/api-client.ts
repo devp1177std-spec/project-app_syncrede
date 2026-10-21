@@ -12,7 +12,7 @@ import {
   CreateStoryDto,
   StoryViewUserDto,
 } from '@social/types';
-import { OnboardingProfileInput, SignUpInput } from '@social/validation';
+import { OnboardingProfileInput } from '@social/validation';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -64,120 +64,6 @@ export async function fetchApi<T = unknown>(
 }
 
 export const apiClient = {
-  auth: {
-    async getSession(): Promise<{ user: UserProfile | null; session: any | null }> {
-      try {
-        const token = getAuthToken();
-        const res = await fetch(`${API_BASE_URL}/api/auth/get-session`, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          credentials: 'include',
-        });
-        if (!res.ok) return { user: null, session: null };
-        const data = await res.json();
-        return {
-          user: data?.user || null,
-          session: data?.session || null,
-        };
-      } catch {
-        return { user: null, session: null };
-      }
-    },
-
-    async signIn(identifier: string, password: string): Promise<ApiResponse<any>> {
-      const isEmail = identifier.includes('@');
-      const endpoint = isEmail ? 'api/auth/sign-in/email' : 'api/auth/sign-in/username';
-      const body = isEmail
-        ? { email: identifier, password }
-        : { username: identifier, password };
-
-      try {
-        const cleanBase = API_BASE_URL.replace(/\/$/, '');
-        const res = await fetch(`${cleanBase}/${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(body),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok) {
-          if (data?.token) {
-            setAuthToken(data.token);
-          }
-          return {
-            success: true,
-            data: data?.user || data,
-          };
-        }
-        return {
-          success: false,
-          error: {
-            code: 'AUTH_ERROR',
-            message: data?.message || data?.error || 'Invalid credentials',
-          },
-        };
-      } catch (e: any) {
-        return {
-          success: false,
-          error: {
-            code: 'NETWORK_ERROR',
-            message: e?.message || 'Network error connecting to auth server',
-          },
-        };
-      }
-    },
-
-    async signUp(input: SignUpInput): Promise<ApiResponse<any>> {
-      try {
-        const cleanBase = API_BASE_URL.replace(/\/$/, '');
-        const res = await fetch(`${cleanBase}/api/auth/sign-up/email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(input),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok) {
-          if (data?.token) {
-            setAuthToken(data.token);
-          }
-          return {
-            success: true,
-            data: data?.user || data,
-          };
-        }
-        return {
-          success: false,
-          error: {
-            code: 'AUTH_ERROR',
-            message: data?.message || data?.error || 'Registration failed',
-          },
-        };
-      } catch (e: any) {
-        return {
-          success: false,
-          error: {
-            code: 'NETWORK_ERROR',
-            message: e?.message || 'Network error connecting to auth server',
-          },
-        };
-      }
-    },
-
-    async signOut(): Promise<void> {
-      setAuthToken(null);
-      try {
-        await fetch(`${API_BASE_URL}/api/auth/sign-out`, {
-          method: 'POST',
-          credentials: 'include',
-        });
-      } catch (e) {
-        console.error('Sign out error:', e);
-      }
-    },
-  },
-
   users: {
     async checkUsername(username: string): Promise<UsernameCheckResponse> {
       try {

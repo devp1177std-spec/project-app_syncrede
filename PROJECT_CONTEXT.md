@@ -38,7 +38,7 @@ social-media-app/
 | **Client State / Fetching** | `@tanstack/react-query` 5.66.0, `react-hook-form`, `zod` | Server state, optimistic updates, client schema validation |
 | **API Backend** | NestJS 11 (`@nestjs/core`, `@nestjs/platform-express`) | Modular REST architecture, global interceptors, filters, pipes |
 | **Database & ORM** | PostgreSQL 16, Prisma ORM (`@prisma/client` ^6.4.1) | Relational persistence, schema modeling, relation tables |
-| **Authentication** | Better Auth (`better-auth` ^1.7.7 in API, ^1.2.3 in web) | Session tokens, password hashing, bearer plugin, username plugin |
+| **Authentication** | Firebase Authentication (Client SDK & Firebase Admin SDK) | Modular client auth on web with session cookies and Firebase Admin validation on API |
 | **Cache & In-Memory Store** | Redis (`ioredis` ^5.11.1), Docker Redis 7 | User presence, rate limit storage, popular post ZSET ranking, sets |
 | **Background Queue** | BullMQ (`bullmq` ^5.81.5), `@nestjs/bullmq` | Asynchronous job dispatching and worker service |
 | **Storage / Media** | AWS SDK S3 (`@aws-sdk/client-s3`, presigner) | Presigned upload/download URLs for Cloudflare R2 / S3 / MinIO |
@@ -86,8 +86,8 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 1. **`HealthModule`** (`/api/health`):
    - `GET /api/health`: Validates PostgreSQL connection (`SELECT 1`), Redis ping, and S3/R2 storage health.
 2. **`AuthModule`** (`/api/auth`):
-   - `ALL /api/auth/*`: Handled by Better Auth node handler with Prisma adapter, Redis secondary storage, bearer plugin, and username plugin.
-   - Guards: `AuthGuard` (session verification), `OptionalAuthGuard` (optional viewer session injection), `RolesGuard` (`@Roles('admin')`).
+   - Full Firebase Admin integration: `AuthService` verifies incoming Firebase Bearer ID tokens via `adminAuth.verifyIdToken()` and syncs users with Prisma database.
+   - Guards: `AuthGuard` (token verification), `OptionalAuthGuard` (optional viewer token injection), `RolesGuard` (`@Roles('admin')`).
 3. **`UsersModule`** (`/api/users` & `/api/admin/verifications`):
    - `GET /api/users/check-username?u={username}`: Checks reserved set and DB availability; caches results in Redis (5m TTL).
    - `PATCH /api/users/me/profile`: Updates profile bio, location, website, avatar, username, onboarding state.
@@ -229,8 +229,8 @@ According to `README.md` and codebase verification:
    - *Impact:* Creates multiple connection pools to PostgreSQL rather than sharing a single pooled connection.
 5. **PostgreSQL Port in Docker**:
    - `docker-compose.yml` maps PostgreSQL to host port `5433` (`5433:5432`), and `.env` specifies port `5433`. Ensure local development connects to port 5433 and not the standard 5432.
-6. **Package Version Discrepancy**:
-   - `better-auth` is specified as `^1.7.7` in `apps/api/package.json` and `^1.2.3` in `apps/web/package.json`.
+6. **Authentication Transition**:
+   - Better Auth has been completely removed across both `apps/web` and `apps/api`. Ready for Firebase Authentication.
 7. **Debug Statement**:
    - `apps/web/app/chat/page.tsx` line 2 contains `console.log("changes 2 made here");`.
 

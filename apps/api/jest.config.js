@@ -8,14 +8,8 @@ module.exports = {
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
-  // Transform ESM packages shipped by @nestjs/* and better-auth
+  // Transform ESM packages shipped by @nestjs/*
   transformIgnorePatterns: [
-    'node_modules/(?!(@nestjs/(config|swagger|terminus|bullmq|bull-shared|throttler)|better-auth)/)',
+    'node_modules/(?!(@nestjs/(config|swagger|terminus|bullmq|bull-shared|throttler)|jose|firebase-admin|@firebase|jwks-rsa)/)',
   ],
-  moduleNameMapper: {
-    '^better-auth$': '<rootDir>/__mocks__/better-auth.js',
-    '^better-auth/adapters/prisma$': '<rootDir>/__mocks__/better-auth.js',
-    '^better-auth/plugins$': '<rootDir>/__mocks__/better-auth.js',
-    '^better-auth/node$': '<rootDir>/__mocks__/better-auth.js',
-  },
 };

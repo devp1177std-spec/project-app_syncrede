@@ -16,7 +16,7 @@ A scalable, production-grade social media platform architecture built feature-by
 | **File Storage & CDN** | Cloudflare R2, Cloudflare CDN | S3-compatible media storage & fast edge delivery |
 | **Video Processing** | FFmpeg (via BullMQ) | Asynchronous transcoding and thumbnail generation |
 | **Search Engine** | OpenSearch | Full-text search for users, posts, and hashtags |
-| **Authentication** | Better Auth | Session & user authentication |
+| **Authentication** | Firebase Authentication | User authentication & identity management |
 | **Notifications** | Web Push, FCM | Real-time and push notifications |
 
 ---
@@ -94,7 +94,7 @@ npm run dev --workspace=@social/worker
 
 ## Feature-by-Feature Roadmap
 - [x] **Feature 0: Monorepo Foundation & Core Infrastructure**
-- [ ] **Feature 1: Authentication & User Accounts (Better Auth + NestJS Guards)**
+- [ ] **Feature 1: Authentication & User Accounts (Firebase Authentication + NestJS Guards)**
 - [ ] **Feature 2: User Profiles & Follows System**
 - [ ] **Feature 3: Posts & Cloudflare R2 Media Uploads**
 - [ ] **Feature 4: Comments & Likes System**

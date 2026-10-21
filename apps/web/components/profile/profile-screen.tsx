@@ -29,7 +29,7 @@ export function ProfileScreen({
   showModeToggle = false,
 }: ProfileScreenProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [isOwnProfile, setIsOwnProfile] = useState(initialOwnProfile);
   const [sort, setSort] = useState<SortOrder>('latest');
   const [activeTab, setActiveTab] = useState<'posts' | 'following'>('posts');
@@ -195,7 +195,7 @@ export function ProfileScreen({
         onMute={() => alert(`Muted @${profile.username}`)}
         onBlock={() => alert(`Blocked @${profile.username}`)}
         onEditProfile={() => alert('Edit profile')}
-        onLogout={() => alert('Logged out')}
+        onLogout={logout}
       />
     </div>
   );

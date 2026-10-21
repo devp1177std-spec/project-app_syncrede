@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "echo 0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test lib/firebase/errors.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.0",
@@ -15,14 +16,16 @@
     "@social/types": "*",
     "@social/validation": "*",
     "@tanstack/react-query": "^5.66.0",
-    "better-auth": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "firebase": "^13.0.0",
+    "firebase-admin": "^14.5.0",
     "lucide-react": "^0.475.0",
     "next": "^15.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
+    "server-only": "^0.0.1",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",

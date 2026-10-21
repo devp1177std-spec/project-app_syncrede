@@ -8,13 +8,10 @@ export class OptionalAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     try {
-      const session = await this.authService.auth.api.getSession({
-        headers: request.headers,
-      });
-
-      if (session && session.user) {
-        request.user = session.user;
-        request.session = session.session;
+      const result = await this.authService.validateRequest(request);
+      if (result && result.user) {
+        request.user = result.user;
+        request.session = result.session;
       } else {
         request.user = null;
         request.session = null;

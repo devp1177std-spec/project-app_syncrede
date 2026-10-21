@@ -1,0 +1,23 @@
+{
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "SocialFeed Market",
+        "supportEmail": "support@example.com",
+        "authorizedRedirectUris": [
+          "http://localhost"
+        ]
+      }
+    }
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4001
+    }
+  }
+}

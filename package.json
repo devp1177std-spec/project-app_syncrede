@@ -13,6 +13,8 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
+    "emulator:auth": "npx -y firebase-tools@latest emulators:start --only auth",
+    "auth:deploy": "npx -y firebase-tools@latest deploy --only auth",
     "db:generate": "npm run db:generate --workspace=@social/database",
     "db:push": "npm run db:push --workspace=@social/database",
     "db:migrate": "npm run db:migrate --workspace=@social/database"
@@ -20,5 +22,9 @@
   "devDependencies": {
     "turbo": "^2.4.4",
     "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "firebase": "^13.0.0",
+    "firebase-admin": "^14.5.0"
   }
 }

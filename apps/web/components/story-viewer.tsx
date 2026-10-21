@@ -26,6 +26,7 @@ import {
   StoryItem,
   getStoryGroupByUsername,
 } from '@/lib/stories-data';
+import { api } from '@/lib/api-client';
 
 interface StoryViewerProps {
   initialUsername?: string;
@@ -260,6 +261,12 @@ export function StoryViewer({
       }
     };
   }, [isPaused, mediaLoading, currentStory, storyDuration, handleNextStory, isInvalidUser]);
+
+  // Sync story view to backend when active story changes
+  useEffect(() => {
+    if (!currentStory?.id) return;
+    api.stories.recordView(currentStory.id).catch(() => {});
+  }, [currentStory?.id]);
 
   // Keyboard controls: Escape (close), ArrowLeft (prev), ArrowRight (next), Space (pause/resume)
   useEffect(() => {

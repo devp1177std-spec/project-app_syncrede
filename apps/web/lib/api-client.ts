@@ -13,6 +13,7 @@ import {
   StoryViewUserDto,
 } from '@social/types';
 import { OnboardingProfileInput } from '@social/validation';
+import { auth } from '@/lib/firebase/client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -39,8 +40,28 @@ export async function fetchApi<T = unknown>(
   const url = `${cleanBase}/${cleanEndpoint}`;
 
   try {
-    const token = getAuthToken();
-    const res = await fetch(url, {
+    let token: string | null = null;
+    if (typeof window !== 'undefined' && auth.currentUser) {
+      try {
+        // Automatically fetch or refresh valid ID token from Firebase
+        token = await auth.currentUser.getIdToken(false);
+        setAuthToken(token);
+      } catch (err: any) {
+        if (
+          err?.code === 'auth/user-token-expired' ||
+          err?.code === 'auth/id-token-expired' ||
+          err?.code === 'auth/id-token-revoked'
+        ) {
+          setAuthToken(null);
+        }
+      }
+    }
+
+    if (!token) {
+      token = getAuthToken();
+    }
+
+    let res = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -49,6 +70,25 @@ export async function fetchApi<T = unknown>(
       },
       credentials: 'include',
     });
+
+    // If 401 Unauthorized occurs, force-refresh the ID token once and retry
+    if (res.status === 401 && typeof window !== 'undefined' && auth.currentUser) {
+      try {
+        const freshToken = await auth.currentUser.getIdToken(true);
+        setAuthToken(freshToken);
+        res = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${freshToken}`,
+            ...options.headers,
+          },
+          credentials: 'include',
+        });
+      } catch {
+        // Force refresh failed, proceed with response
+      }
+    }
 
     const data = await res.json();
     return data as ApiResponse<T>;

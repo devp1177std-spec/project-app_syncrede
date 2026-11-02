@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
@@ -27,7 +27,7 @@ interface AuthContextValue {
   isOnboarded: boolean;
   loginWithCredentials: (identifier: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (name: string, email: string, username: string, pass: string) => Promise<{ success: boolean; error?: string }>;
-  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string; cancelled?: boolean }>;
   loginWithApple: () => Promise<{ success: boolean; error?: string }>;
   sendPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
   updateProfile: (data: OnboardingProfileInput) => Promise<{ success: boolean; error?: string }>;
@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const isGoogleAuthInProgress = useRef(false);
 
   // Synchronize server-side session cookie via Route Handler
   const syncServerSession = useCallback(async (token: string | null) => {
@@ -141,8 +142,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 // Offline fallback remains active
               });
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error('[Auth Provider] Failed to initialize user token:', e);
+          const isTokenExpired =
+            e?.code === 'auth/user-token-expired' ||
+            e?.code === 'auth/id-token-expired' ||
+            e?.code === 'auth/id-token-revoked' ||
+            e?.message?.includes('user-token-expired');
+
+          if (isTokenExpired) {
+            // Clean up invalidated session to avoid stuck application state
+            await signOut(auth).catch(() => {});
+            setAuthToken(null);
+            await syncServerSession(null);
+            setUser(null);
+            setFirebaseUser(null);
+          }
         }
       } else {
         setAuthToken(null);
@@ -158,9 +173,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSession = useCallback(async () => {
     if (auth.currentUser) {
-      const token = await auth.currentUser.getIdToken(true);
-      setAuthToken(token);
-      await syncServerSession(token);
+      try {
+        const token = await auth.currentUser.getIdToken(true);
+        setAuthToken(token);
+        await syncServerSession(token);
+      } catch (err: any) {
+        console.warn('[Auth Provider] Failed to refresh session:', err?.message);
+        if (
+          err?.code === 'auth/user-token-expired' ||
+          err?.code === 'auth/id-token-expired' ||
+          err?.code === 'auth/id-token-revoked' ||
+          err?.message?.includes('user-token-expired')
+        ) {
+          await signOut(auth).catch(() => {});
+          setAuthToken(null);
+          await syncServerSession(null);
+          setUser(null);
+          setFirebaseUser(null);
+        }
+      }
     }
   }, [syncServerSession]);
 
@@ -244,17 +275,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string; cancelled?: boolean }> => {
+    // Prevent duplicate concurrent popup requests
+    if (isGoogleAuthInProgress.current) {
+      return { success: false, cancelled: true };
+    }
+    isGoogleAuthInProgress.current = true;
     setIsLoading(true);
+
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      if (result.user) {
+      // Ensure account chooser is prompted
+      googleProvider.setCustomParameters({ prompt: 'select_account' });
+
+      // Execute popup with automatic retry on stale/expired credential
+      let result;
+      try {
+        result = await signInWithPopup(auth, googleProvider);
+      } catch (popupErr: any) {
+        // Handle user closing popup or duplicate popup request gracefully without error
+        const isPopupClosedByUser =
+          popupErr?.code === 'auth/popup-closed-by-user' ||
+          popupErr?.code === 'auth/cancelled-popup-request' ||
+          popupErr?.message?.includes('popup-closed-by-user') ||
+          popupErr?.message?.includes('cancelled-popup-request');
+
+        if (isPopupClosedByUser) {
+          console.info('[Google Sign-In] Popup closed or cancelled by user.');
+          return { success: false, cancelled: true };
+        }
+
+        const isTokenExpired =
+          popupErr?.code === 'auth/user-token-expired' ||
+          popupErr?.code === 'auth/id-token-expired' ||
+          popupErr?.code === 'auth/id-token-revoked' ||
+          popupErr?.message?.includes('user-token-expired');
+
+        if (isTokenExpired) {
+          console.warn(
+            '[Auth Provider] User token expired during Google sign-in. Clearing stale cache and retrying...',
+          );
+          await signOut(auth).catch(() => {});
+          setAuthToken(null);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('social_auth_token');
+          }
+          // Retry once with a completely clean slate
+          result = await signInWithPopup(auth, googleProvider);
+        } else {
+          throw popupErr;
+        }
+      }
+
+      if (result?.user) {
+        // Force-refresh token to guarantee a freshly minted, non-expired ID token
+        const freshIdToken = await result.user.getIdToken(true);
+        setAuthToken(freshIdToken);
+        await syncServerSession(freshIdToken);
         return { success: true };
       }
       return { success: false, error: 'Google sign-in did not complete.' };
     } catch (e: any) {
+      const isPopupClosedByUser =
+        e?.code === 'auth/popup-closed-by-user' ||
+        e?.code === 'auth/cancelled-popup-request' ||
+        e?.message?.includes('popup-closed-by-user') ||
+        e?.message?.includes('cancelled-popup-request');
+
+      if (isPopupClosedByUser) {
+        console.info('[Google Sign-In] Popup closed or cancelled by user.');
+        return { success: false, cancelled: true };
+      }
+
+      console.error('[Google Sign-In Error]:', e);
       return { success: false, error: formatFirebaseAuthError(e) };
     } finally {
+      isGoogleAuthInProgress.current = false;
       setIsLoading(false);
     }
   };

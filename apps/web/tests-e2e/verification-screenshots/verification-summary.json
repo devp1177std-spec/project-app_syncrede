@@ -1,0 +1,436 @@
+[
+  {
+    "viewport": "desktop",
+    "route": "/login",
+    "name": "login",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/login",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "0px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "desktop-login.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/signup",
+    "name": "signup",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/signup",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "9999px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "desktop-signup.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/forgot-password",
+    "name": "forgot-password",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/forgot-password",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "9999px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "desktop-forgot-password.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/splash",
+    "name": "splash",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/splash",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": null,
+      "buttonBg": null
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "desktop-splash.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/",
+    "name": "home-feed",
+    "error": "page.goto: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/profile",
+    "name": "profile",
+    "error": "page.goto: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/profile\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/social",
+    "name": "social",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/social",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "0px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "desktop-social.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/market",
+    "name": "market",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/market",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "14px",
+      "buttonBg": "rgb(37, 99, 235)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "desktop-market.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/chat",
+    "name": "chat",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/chat",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "9999px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "desktop-chat.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/stories",
+    "name": "stories",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/stories",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": null,
+      "buttonBorderRadius": "20px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 1,
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/stories/story-rosy-1/view",
+        "error": "net::ERR_CONNECTION_REFUSED"
+      }
+    ],
+    "consoleErrorsCount": 1,
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "screenshot": "desktop-stories.png"
+  },
+  {
+    "viewport": "desktop",
+    "route": "/create-profile",
+    "name": "create-profile",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/create-profile",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "9999px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "desktop-create-profile.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/login",
+    "name": "login",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/login",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "0px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "mobile-login.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/signup",
+    "name": "signup",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/signup",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "9999px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "mobile-signup.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/forgot-password",
+    "name": "forgot-password",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/forgot-password",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "9999px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "mobile-forgot-password.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/splash",
+    "name": "splash",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/splash",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": null,
+      "buttonBg": null
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "mobile-splash.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/",
+    "name": "home-feed",
+    "error": "page.goto: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/profile",
+    "name": "profile",
+    "error": "page.goto: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/profile\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/social",
+    "name": "social",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/social",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "0px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "mobile-social.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/market",
+    "name": "market",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/market",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "14px",
+      "buttonBg": "rgb(37, 99, 235)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "mobile-market.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/chat",
+    "name": "chat",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/chat",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "9999px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "mobile-chat.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/stories",
+    "name": "stories",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/stories",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": null,
+      "buttonBorderRadius": "20px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 1,
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/stories/story-rosy-1/view",
+        "error": "net::ERR_CONNECTION_REFUSED"
+      }
+    ],
+    "consoleErrorsCount": 1,
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "screenshot": "mobile-stories.png"
+  },
+  {
+    "viewport": "mobile",
+    "route": "/create-profile",
+    "name": "create-profile",
+    "httpStatus": 200,
+    "finalUrl": "http://localhost:3000/login",
+    "isStyled": true,
+    "styleMetrics": {
+      "styleSheetsCount": 2,
+      "totalRules": 768,
+      "bodyBg": "rgb(18, 18, 20)",
+      "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "headerFontSize": "12px",
+      "buttonBorderRadius": "0px",
+      "buttonBg": "rgba(0, 0, 0, 0)"
+    },
+    "failedRequestsCount": 0,
+    "failedRequests": [],
+    "consoleErrorsCount": 0,
+    "consoleErrors": [],
+    "screenshot": "mobile-create-profile.png"
+  }
+]

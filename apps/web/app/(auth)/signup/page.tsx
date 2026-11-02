@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -32,6 +32,7 @@ export default function SignUpPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSocialLoading, setIsSocialLoading] = useState(false);
+  const isActionPending = useRef(false);
 
   const {
     register,
@@ -73,18 +74,25 @@ export default function SignUpPage() {
   };
 
   const handleGoogleLogin = async () => {
+    if (isActionPending.current || isSocialLoading || isSubmitting) return;
+    isActionPending.current = true;
     setFormError(null);
     setIsSocialLoading(true);
-    const res = await loginWithGoogle();
-    setIsSocialLoading(false);
-    if (res.success) {
-      router.push('/create-profile');
-    } else if (res.error) {
-      setFormError(res.error);
+    try {
+      const res = await loginWithGoogle();
+      if (res.success) {
+        router.push('/create-profile');
+      } else if (res.error) {
+        setFormError(res.error);
+      }
+    } finally {
+      isActionPending.current = false;
+      setIsSocialLoading(false);
     }
   };
 
   const handleAppleLogin = async () => {
+    if (isActionPending.current || isSocialLoading || isSubmitting) return;
     setFormError(null);
     const res = await loginWithApple();
     if (!res.success && res.error) {

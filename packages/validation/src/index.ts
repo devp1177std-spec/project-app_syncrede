@@ -26,12 +26,19 @@ export const signInSchema = z.object({
 });
 
 export const onboardingProfileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(50).optional(),
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/).optional(),
   bio: z.string().max(150, 'Bio cannot exceed 150 characters').optional(),
   location: z.string().max(100).optional(),
   website: z.string().url('Invalid website URL').optional().or(z.literal('')),
-  avatarUrl: z.string().url('Invalid avatar URL').optional(),
+  avatarUrl: z
+    .string()
+    .url('Invalid avatar URL')
+    .or(z.string().startsWith('data:image/'))
+    .optional()
+    .or(z.literal('')),
   skip: z.boolean().default(false),
+  completeOnboarding: z.boolean().optional(),
 });
 
 export const createPostSchema = z.object({
@@ -139,6 +146,7 @@ export const clientProfileSchema = z.object({
     .default(''),
   avatarUrl: z.string().optional().default(''),
   skip: z.boolean().default(false),
+  completeOnboarding: z.boolean().optional(),
 });
 
 export type LoginFormInput = z.infer<typeof loginFormSchema>;

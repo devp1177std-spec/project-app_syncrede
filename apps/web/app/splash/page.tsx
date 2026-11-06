@@ -7,7 +7,7 @@ import { useAuth } from '@/providers/auth-provider';
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { isAuthenticated, isOnboarded, isLoading } = useAuth();
+  const { isAuthenticated, isOnboarded, onboardingStatus, isLoading } = useAuth();
 
   useEffect(() => {
     if (isLoading) return;
@@ -15,7 +15,7 @@ export default function SplashScreen() {
     const timer = setTimeout(() => {
       if (!isAuthenticated) {
         router.push('/login');
-      } else if (!isOnboarded) {
+      } else if (onboardingStatus === 'NOT_COMPLETED' || !isOnboarded) {
         router.push('/create-profile');
       } else {
         router.push('/');
@@ -23,12 +23,12 @@ export default function SplashScreen() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated, isOnboarded, isLoading, router]);
+  }, [isAuthenticated, isOnboarded, onboardingStatus, isLoading, router]);
 
   const handleTapToContinue = () => {
     if (!isAuthenticated) {
       router.push('/login');
-    } else if (!isOnboarded) {
+    } else if (onboardingStatus === 'NOT_COMPLETED' || !isOnboarded) {
       router.push('/create-profile');
     } else {
       router.push('/');

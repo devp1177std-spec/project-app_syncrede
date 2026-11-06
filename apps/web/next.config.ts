@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@social/types', '@social/validation', '@social/shared'],
-  serverExternalPackages: ['ws'],
+  serverExternalPackages: ['firebase-admin', 'ws'],
   images: {
     remotePatterns: [
       {

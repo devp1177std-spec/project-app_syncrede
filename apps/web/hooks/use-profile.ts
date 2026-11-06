@@ -10,22 +10,45 @@ interface UseProfileOptions {
   isOwnProfile?: boolean;
 }
 
-export function useProfile({ username = 'oliviamartinez', isOwnProfile = false }: UseProfileOptions) {
+export function useProfile({ username, isOwnProfile = false }: UseProfileOptions) {
   return useQuery<UserProfileResponse>({
-    queryKey: ['profile', username, isOwnProfile],
+    queryKey: ['profile', isOwnProfile ? 'me' : username],
     queryFn: async () => {
-      try {
-        const res = await apiClient.users.getProfile(username);
-        if (res.success && res.data) {
-          return res.data;
+      if (isOwnProfile) {
+        try {
+          const res = await apiClient.users.getMe();
+          if (res.success && res.data) {
+            return res.data;
+          }
+        } catch {
+          return getMockProfile('oliviamartinez', true);
         }
-      } catch (err) {
-        console.warn('API getProfile call failed, falling back to design mockup data:', err);
+        return getMockProfile('oliviamartinez', true);
       }
 
-      // Return high-fidelity mockup data matching the Figma screenshot
-      return getMockProfile(username, isOwnProfile);
+      if (username) {
+        try {
+          const res = await apiClient.users.getProfile(username);
+          if (res.success && res.data) {
+            return res.data;
+          }
+        } catch (err) {
+          if (username === 'oliviamartinez') {
+            return getMockProfile(username, false);
+          }
+          throw err;
+        }
+
+        if (username === 'oliviamartinez') {
+          return getMockProfile(username, false);
+        }
+
+        throw new Error(`User @${username} not found`);
+      }
+
+      throw new Error('No username or session available');
     },
+    enabled: isOwnProfile || Boolean(username),
     staleTime: 1000 * 60 * 2, // 2 minutes cache
   });
 }

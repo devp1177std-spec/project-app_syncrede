@@ -81,7 +81,11 @@ export default function SignUpPage() {
     try {
       const res = await loginWithGoogle();
       if (res.success) {
-        router.push('/create-profile');
+        if (res.onboardingStatus === 'COMPLETED' || res.onboardingStatus === 'SKIPPED' || res.isOnboarded) {
+          router.push('/');
+        } else {
+          router.push('/create-profile');
+        }
       } else if (res.error) {
         setFormError(res.error);
       }

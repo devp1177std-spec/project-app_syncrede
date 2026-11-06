@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "echo 0",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test lib/firebase/errors.test.ts"
+    "test": "node --experimental-strip-types --test lib/firebase/errors.test.ts lib/onboarding.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.0",

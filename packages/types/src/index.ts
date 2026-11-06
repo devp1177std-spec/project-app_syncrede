@@ -15,6 +15,9 @@ export interface ApiResponse<T = unknown> {
   };
 }
 
+// Onboarding & Profile Completion Status
+export type OnboardingStatus = 'COMPLETED' | 'SKIPPED' | 'NOT_COMPLETED';
+
 // User Entity
 export interface UserProfile {
   id: string;
@@ -28,6 +31,7 @@ export interface UserProfile {
   isVerified: boolean;
   onboardingCompletedAt?: Date | string | null;
   onboardingSkipped?: boolean;
+  onboardingStatus?: OnboardingStatus;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -109,6 +113,8 @@ export interface UserProfileResponse {
   bio: string | null;
   avatar: string | null;
   cover: string | null;
+  location?: string | null;
+  website?: string | null;
   verified: boolean;
   isOnline: boolean;
   isPrivate: boolean;
@@ -116,6 +122,10 @@ export interface UserProfileResponse {
   followingCount: number;
   postCount: number;
   relationship: UserRelationship;
+  email?: string;
+  onboardingCompletedAt?: Date | string | null;
+  onboardingSkipped?: boolean;
+  onboardingStatus?: OnboardingStatus;
 }
 
 // User Post Grid Item (Mobile 3-Column Grid)

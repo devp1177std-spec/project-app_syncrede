@@ -2,7 +2,7 @@
 
 ## 1. Overview & Architecture
 
-This repository is a TypeScript full-stack monorepo managed with **Turborepo** (`turbo` 2.4.4 / 2.11.7) and **npm workspaces** (`packageManager: npm@11.8.0`). It is structured feature-by-feature toward a production-grade social media and community marketplace application.
+This repository is a TypeScript full-stack monorepo managed with **Turborepo** (`turbo` 2.11.7) and **npm workspaces** (`packageManager: npm@11.8.0`). It is structured feature-by-feature toward a production-grade social media and community marketplace application.
 
 ### Monorepo Structure
 
@@ -32,27 +32,26 @@ social-media-app/
 
 | Area | Technology | Role / Notes |
 | :--- | :--- | :--- |
-| **Monorepo Manager** | Turborepo (`turbo` ^2.4.4) | Build orchestration, typechecking, task pipeline |
-| **Web Frontend** | Next.js 15.2.0, React 19, TypeScript | App Router, mobile-first shell layout (`MobileShell`) |
-| **Frontend Styling** | Tailwind CSS 3.4.17, `clsx`, `tailwind-merge` | Utility-first styling with custom mobile viewport containers |
+| **Monorepo Manager** | Turborepo (`turbo` ^2.11.7) | Build orchestration, typechecking, task pipeline |
+| **Web Frontend** | Next.js 15.5.27, React 19, TypeScript | App Router, mobile-first shell layout (`MobileShell`), Edge route protection |
+| **Frontend Styling** | Tailwind CSS 3.4.17, `clsx`, `tailwind-merge`, `tailwindcss-animate` | Utility-first styling with custom mobile viewport containers & animations |
 | **Client State / Fetching** | `@tanstack/react-query` 5.66.0, `react-hook-form`, `zod` | Server state, optimistic updates, client schema validation |
 | **API Backend** | NestJS 11 (`@nestjs/core`, `@nestjs/platform-express`) | Modular REST architecture, global interceptors, filters, pipes |
 | **Database & ORM** | PostgreSQL 16, Prisma ORM (`@prisma/client` ^6.4.1) | Relational persistence, schema modeling, relation tables |
-| **Authentication** | Firebase Authentication (Client SDK & Firebase Admin SDK) | Modular client auth on web with session cookies and Firebase Admin validation on API |
+| **Authentication** | Firebase Authentication (`firebase` ^13.0.0, `firebase-admin` ^14.5.0) | Client SDK for Google Sign-In & email/password; server session cookies (`__session`) via route handlers; Edge middleware protection; Firebase Admin ID token verification on API |
 | **Cache & In-Memory Store** | Redis (`ioredis` ^5.11.1), Docker Redis 7 | User presence, rate limit storage, popular post ZSET ranking, sets |
 | **Background Queue** | BullMQ (`bullmq` ^5.81.5), `@nestjs/bullmq` | Asynchronous job dispatching and worker service |
 | **Storage / Media** | AWS SDK S3 (`@aws-sdk/client-s3`, presigner) | Presigned upload/download URLs for Cloudflare R2 / S3 / MinIO |
 | **Logging & Docs** | `nestjs-pino`, `pino-pretty`, `@nestjs/swagger` | Structured logging with request IDs, OpenAPI at `/api/docs` |
-| **Testing** | Jest 29, `ts-jest` | 8 test suites (60 unit tests) in `apps/api` |
+| **Testing** | Jest 29 (`ts-jest`), Node test runner, Playwright E2E | 8 test suites (64 unit tests) in `apps/api`, 1 test suite (10 unit tests) in `apps/web` (total 74 unit tests), plus automated Playwright E2E suite (`apps/web/tests-e2e/`) |
 
 ---
 
 ## 3. Database Schema (`packages/database/prisma/schema.prisma`)
 
-The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed in schema:
+The database provider is **PostgreSQL** (`DATABASE_URL`). Better Auth legacy tables (`Session`, `Account`, `Verification`) have been completely removed. Active models confirmed in schema:
 
-- **`User` (`users`)**: Primary identity model. Includes `email`, `username`, `displayUsername`, `bio`, `location`, `website`, `isVerified`, `isPrivate`, `role` (`"user"` | `"admin"`), counters (`followerCount`, `followingCount`, `postCount`), and onboarding tracking (`termsAcceptedAt`, `termsVersion`, `onboardingCompletedAt`, `onboardingSkipped`).
-- **Better Auth Core**: `Session` (`sessions`), `Account` (`accounts`), and `Verification` (`verifications`) models.
+- **`User` (`users`)**: Primary identity model. Includes `email`, `username`, `displayUsername`, `bio`, `location`, `website`, `isVerified`, `isPrivate`, `role` (`"user"` | `"admin"`), counters (`followerCount`, `followingCount`, `postCount`), and onboarding tracking (`termsAcceptedAt`, `termsVersion`, `onboardingCompletedAt`, `onboardingSkipped`). Synchronized with Firebase Authentication UID.
 - **Social Graph Models**:
   - `Follow` (`follows`): Many-to-many follower relationship with compound unique `[followerId, followingId]`.
   - `FollowRequest` (`follow_requests`): Follow requests for private accounts (`PENDING`, `ACCEPTED`, `REJECTED`, `CANCELLED`).
@@ -67,7 +66,7 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
   - `Story` (`stories`): 24-hour disappearing content with `userId`, `mediaUrl`, `mediaType` (`IMAGE` | `VIDEO`), `duration`, `caption`, `location`, `linkText`, `linkUrl`, `expiresAt`.
   - `StoryView` (`story_views`): View receipts and analytics tracking viewer ID, story ID, and unique composite `[storyId, viewerId]`.
 
-*Note on migrations:* `packages/database/prisma/` contains `schema.prisma` but no `migrations/` directory. Schema synchronization is currently done via `npm run db:push`.
+*Note on migrations:* `packages/database/prisma/` contains `schema.prisma`. Schema synchronization is currently performed via `npm run db:push`.
 
 ---
 
@@ -86,8 +85,10 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 1. **`HealthModule`** (`/api/health`):
    - `GET /api/health`: Validates PostgreSQL connection (`SELECT 1`), Redis ping, and S3/R2 storage health.
 2. **`AuthModule`** (`/api/auth`):
-   - Full Firebase Admin integration: `AuthService` verifies incoming Firebase Bearer ID tokens via `adminAuth.verifyIdToken()` and syncs users with Prisma database.
-   - Guards: `AuthGuard` (token verification), `OptionalAuthGuard` (optional viewer token injection), `RolesGuard` (`@Roles('admin')`).
+   - Full Firebase Admin integration: `AuthService` initializes `adminAuth` via service account JSON, environment credentials (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`), or Google Application Default Credentials.
+   - `AuthService.validateRequest()`: Decodes and verifies incoming Firebase Bearer ID tokens (`adminAuth.verifyIdToken()`), auto-creates or links users in the PostgreSQL `User` table, and returns user/session context.
+   - Guards: `AuthGuard` (token verification & user injection), `OptionalAuthGuard` (optional viewer token injection), `RolesGuard` (`@Roles('admin')`).
+   - Test suite: `apps/api/src/auth/auth.service.spec.ts` testing credentials initialization, token validation, user linkage, and unauthorized error paths.
 3. **`UsersModule`** (`/api/users` & `/api/admin/verifications`):
    - `GET /api/users/check-username?u={username}`: Checks reserved set and DB availability; caches results in Redis (5m TTL).
    - `PATCH /api/users/me/profile`: Updates profile bio, location, website, avatar, username, onboarding state.
@@ -118,7 +119,7 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 5. **`StorageModule`** (`/api/storage`):
    - `POST /api/storage/presigned-url`: Generates S3/R2 presigned upload URL and public URL.
 6. **`BullMqModule`** (`apps/api/src/bullmq/`):
-   - Registers `video-processing` and `notifications` queues connecting to Redis.
+   - Registers `video-processing`, `notifications`, and `stories` queues connecting to Redis.
 
 ---
 
@@ -134,25 +135,65 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 
 ## 6. Frontend Architecture (`apps/web`)
 
-### Providers & Layout
-- Root layout (`apps/web/app/layout.tsx`) wraps the app in `AppProviders`:
+### Providers, Middleware & Auth Architecture
+- **Root Layout** (`apps/web/app/layout.tsx`):
   - `QueryProvider`: TanStack React Query client with 5-minute stale time.
-  - `AuthProvider`: Auth state, user session synchronization, login/signup/logout, and dev fallback mode.
+  - `AuthProvider` (`apps/web/providers/auth-provider.tsx`):
+    - Subscribes to Firebase `onIdTokenChanged(auth)` to observe login state, tokens, and credentials.
+    - Synchronizes HTTP-only session cookie via `/api/auth/session` (with CSRF prevention).
+    - Exposes `loginWithCredentials`, `signUp`, `loginWithGoogle`, `sendPasswordReset`, `updateProfile`, and `logout`.
+    - Handles friendly Firebase error translation via `formatFirebaseAuthError` (`apps/web/lib/firebase/errors.ts`).
   - `SocketProvider`: Connects to `process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000'`.
-- Inner app layout (`apps/web/app/(app)/layout.tsx`):
-  - Wraps views in `MobileShell` (fixed max-w-[430px] smartphone container) and renders `BottomTabBar`.
+- **Edge Route Protection** (`apps/web/middleware.ts`):
+  - Checks for the presence of the `__session` cookie.
+  - Redirects unauthenticated requests targeting protected routes (`/`, `/profile`, `/create-profile`, `/chat`, `/market`, `/social`, `/stories`) to `/login?redirect={targetPath}`.
+  - Redirects already-authenticated visitors navigating to `/login` or `/signup` back to home (`/`).
+  - Whitelists `/splash`, `/login`, `/signup`, `/forgot-password`, static assets, and auth API routes.
+- **Auth Session Route Handlers**:
+  - `POST /api/auth/session`: Validates CSRF headers (`origin`/`host` match or `x-requested-with`), verifies ID token with Firebase Admin, creates a 5-day session cookie, and sets `httpOnly`, `sameSite: 'lax'`, `secure` cookie.
+  - `POST /api/auth/logout`: Revokes user refresh tokens via Firebase Admin and clears the `__session` cookie.
+- **API Client** (`apps/web/lib/api-client.ts`):
+  - `fetchApi` automatically retrieves current user Firebase ID token via `auth.currentUser.getIdToken()`.
+  - Automatically handles 401 Unauthorized responses by force-refreshing the Firebase ID token and re-trying the request once.
+
+### Core UI Components
+1. **`PostCard`** (`apps/web/components/post-card.tsx`):
+   - Modular, memoized post component for the home feed.
+   - Author header: Creator avatar, username, verified badge, location, timestamp, and follow toggle button.
+   - Three-dot dropdown menu:
+     - **Report Content**: Launches the `ReportBottomSheet` modal for user feedback.
+     - **Not Interested in This Content**: Immediately covers the post with an accessible black translucent overlay (`bg-black/80`), notifies the user, and initiates a 3-second auto-removal animation smoothly collapsing the card height.
+   - Double-tap on image to like with floating animated heart icon.
+   - Action bar: Like (heart), Comment (speech bubble), Send (share), Bookmark/Save.
+   - Like counter with preview user attribution (`including @username`).
+   - Caption with clickable `#hashtags` that filter the home feed.
+   - "View all X comments" opening the interactive comments drawer.
+2. **`ReportBottomSheet`** (`apps/web/components/report-bottom-sheet.tsx`):
+   - Accessible modal bottom sheet for content moderation reporting.
+   - Prevents background body scrolling and handles `Escape` key dismissal.
+   - Validates report reason input before submitting feedback.
+3. **`StoryViewer`** (`apps/web/components/story-viewer.tsx`):
+   - Dedicated full-screen Instagram-style story viewer outside the `MobileShell` layout.
+   - Top-left back button (`ChevronLeft`) in both the active story author bar and the invalid-user fallback state.
+   - Smart referrer-aware history detection (`hasInAppHistoryRef`): uses `router.back()` if navigation started within the app, falling back cleanly to `/` when opened directly.
+   - Mobile safe area support with `calc(env(safe-area-inset-top, 0px) + ...)`.
+   - Instant image load check for pre-cached or completed images.
+   - 60fps segmented progress bar, tap/swipe navigation, press-and-hold pause with UI dimming, quick emoji reactions, and reply input.
 
 ### Page Inventory & Status
-| Route | File Path | Implementation Status | Data Source |
+| Route | File Path | Implementation Status | Data Source / Notes |
 | :--- | :--- | :--- | :--- |
 | `/splash` | `app/splash/page.tsx` | Functional | Redirects after 2s based on auth status |
-| `/login` | `app/(auth)/login/page.tsx` | Functional | Calls API + localStorage dev fallback |
-| `/signup` | `app/(auth)/signup/page.tsx` | Functional | Live username check, calls API |
+| `/login` | `app/(auth)/login/page.tsx` | Functional | Firebase email/password & Google Sign-In with Zod validation |
+| `/signup` | `app/(auth)/signup/page.tsx` | Functional | Firebase registration, live username check, error translation |
+| `/forgot-password` | `app/(auth)/forgot-password/page.tsx` | Functional | Firebase password reset email dispatch with success confirmation |
 | `/create-profile` | `app/(auth)/create-profile/page.tsx` | Functional | Step 2 onboarding, image cropper modal |
-| `/` | `app/(app)/page.tsx` | Interactive UI Prototype | Integrated story circles linked to `/stories/[username]`, mock posts (`INITIAL_POSTS`) |
+| `/api/auth/session` | `app/api/auth/session/route.ts` | Functional | Server-side Firebase session cookie generation with CSRF check |
+| `/api/auth/logout` | `app/api/auth/logout/route.ts` | Functional | Revokes refresh tokens and clears `__session` cookie |
+| `/` | `app/(app)/page.tsx` | Interactive UI Prototype | Integrated story circles, "For you" / "Following" tabs, SearchBar filter, `PostCard` list, "Not Interested" dismissal, `ReportBottomSheet`, and interactive comments drawer |
 | `/stories` | `app/stories/page.tsx` | Functional | Full-screen story viewer default/query entrypoint (`?user=...`) |
-| `/stories/[username]` | `app/stories/[username]/page.tsx` | Functional | Full-screen Instagram-style story viewer for target user |
-| `/social` | `app/(app)/social/page.tsx` | Interactive UI Prototype | **Hardcoded mock chats, communities, bots, feed** |
+| `/stories/[username]` | `app/stories/[username]/page.tsx` | Functional | Full-screen Instagram-style story viewer with back button & gestures |
+| `/social` | `app/(app)/social/page.tsx` | Interactive UI Prototype | Hardcoded mock chats, communities, bots, feed |
 | `/market` | `app/(app)/market/page.tsx` | Incomplete Stub | Static placeholder view |
 | `/profile` | `app/(app)/profile/page.tsx` | Functional with Fallback | Calls API (`/api/users/:username`), falls back to `profile-mock-data.ts` |
 | `/profile/[username]` | `app/(app)/profile/[username]/page.tsx` | Functional with Fallback | Calls API, falls back to `profile-mock-data.ts` |
@@ -160,31 +201,24 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 | `/chat` | `app/chat/page.tsx` | Prototype | Renders `ChatView` |
 | `/chat/[id]` | `app/chat/[id]/page.tsx` | Prototype | Hardcoded conversations in `chat-view.tsx`, simulated `setTimeout` replies |
 
-### User Stories Architecture (`apps/web/components/story-viewer.tsx` & `lib/stories-data.ts`)
-- **Full-Screen Dedicated Route**: Placed at `app/stories/[username]/page.tsx` outside `(app)` to prevent layout conflicts with `MobileShell` and `BottomTabBar`, presenting a dark immersive environment (`#060608`) with ambient desktop backdrop blur.
-- **Auto-Progression & Segmented Timers**: Segmented progress bars with 60fps `requestAnimationFrame` animation loops, advancing automatically between stories and users.
-- **Gestures & Controls**: Left/right tap zones, press-and-hold pause (with UI dimming), touch swipe gestures (down to close, left/right for adjacent users), and keyboard bindings (`Escape`, `ArrowLeft`, `ArrowRight`, `Space`).
-- **Interactive Story Actions**: Quick emoji reaction bursts with float-up animations, message reply input with pause on focus, like heart toggle, and share link generator.
-- **Data Layer**: Centralized in `apps/web/lib/stories-data.ts` exporting `USER_STORIES`, `getAllStoryGroups()`, `getStoryGroupByUsername()`, and `getAdjacentStoryUsers()`.
-
 ---
 
 ## 7. Confirmed Facts vs Assumptions
 
 ### Confirmed Facts
-- Turborepo pipelines (`typecheck` across all 8 packages and 60 unit tests across 8 test suites in `apps/api`) compile and pass cleanly.
-- Production builds succeed with zero errors across `@social/web` (all 14 static and dynamic routes), `@social/api`, and `@social/worker`.
-- Authentication endpoints and session checks exist and are protected by Better Auth with database persistence in Prisma.
-- The User Profile and Social Graph APIs (`UsersService`) are fully implemented on the backend with Redis-backed presence, popular post ranking, follow approval transactions, and verification management.
+- Turborepo pipelines (`npm run typecheck` across all 8 packages) compile with zero errors.
+- Unit test suite: 74 unit tests green (64 unit tests across 8 suites in `@social/api`, 10 unit tests in `@social/web`).
+- Production builds succeed with zero errors across `@social/web` (all 17 static and dynamic routes + edge middleware), `@social/api`, and `@social/worker`.
+- Firebase Authentication is fully integrated across web frontend, Next.js server session cookies/middleware, and NestJS API backend (`adminAuth.verifyIdToken()`).
+- Legacy Better Auth dependencies and Prisma models (`Session`, `Account`, `Verification`) have been completely removed.
+- Home feed posts on `/` are modularized with `PostCard`, double-tap likes, comments drawer, hashtag click filtering, "Not Interested" dismissal overlay with 3-second animated removal, and `ReportBottomSheet` content moderation.
 - The User Stories system is fully implemented end-to-end:
   - **Prisma Schema**: `Story` (with 24h `expiresAt`, `mediaType`, `duration`, `caption`, `location`, `linkText`, `linkUrl`) and `StoryView` (`[storyId, viewerId]` composite unique index for view receipts).
   - **REST API**: NestJS `StoriesModule` mounted at `/api/stories` providing `GET /feed`, `GET /user/:username`, `POST /`, `POST /:id/view`, `DELETE /:id`, and `GET /:id/views`.
   - **Background Worker**: BullMQ queue (`stories`) and worker in `apps/worker` executing `story:cleanup_expired` to purge expired stories from PostgreSQL.
   - **Typed API Client**: Extended `apiClient.stories` and exported `api` alias in `@social/web` with view receipt synchronization on story transition.
-  - **Full-Screen Viewer**: Implemented at `app/stories/[username]/page.tsx` outside `(app)` shell, featuring 60fps segmented progress bar, tap/swipe/keyboard navigation, press-and-hold pause with UI dimming, quick emoji reactions, and reply input.
-  - **Unit Test Coverage**: `apps/api/src/stories/stories.controller.spec.ts` testing all story endpoints and edge cases.
-- Frontend profile viewing (`ProfileScreen`) is integrated with backend APIs but features built-in fallback to mock data when API calls fail or return no data.
-- The home feed posts (`/`), social directory (`/social`), and search (`/search`) pages currently use static local mock datasets and do not call backend post or search APIs.
+  - **Full-Screen Viewer**: Implemented at `app/stories/[username]/page.tsx` outside `(app)` shell, featuring top-left back navigation with smart history detection, safe-area insets, 60fps segmented progress bar, tap/swipe/keyboard navigation, press-and-hold pause with UI dimming, quick emoji reactions, and reply input.
+- Automated E2E testing framework with Playwright CLI (`apps/web/tests-e2e/`) verifies route protection, login, signup, password reset, and visual viewports across mobile and desktop.
 
 ### Assumptions (Pending Backend / Database Implementation)
 - Future posts feed is expected to be served via API rather than static arrays in `app/(app)/page.tsx`.
@@ -198,11 +232,11 @@ The database provider is **PostgreSQL** (`DATABASE_URL`). Key models confirmed i
 
 According to `README.md` and codebase verification:
 - [x] **Feature 0: Monorepo Foundation & Core Infrastructure** (Completed)
-- [x] **Feature 1: Authentication & User Accounts** (Completed on backend and frontend auth flows)
+- [x] **Feature 1: Authentication & User Accounts** (Completed with Firebase Auth on client, Edge middleware, server session cookies, password reset, NestJS token verification, and 3-state onboarding flow with database persistence: COMPLETED, SKIPPED, NOT_COMPLETED)
 - [x] **Feature 2: User Profiles & Follows System** (Completed on backend, profile UI integrated with mock fallback)
-- [x] **Feature 2.5: Instagram-Style User Stories (Full-Stack Completed)** (Completed Prisma schema, REST endpoints, BullMQ cleanup worker, view receipts, dedicated full-screen viewer, segmented progress timer, touch/swipe/keyboard navigation, reactions, and feed integration)
-- [ ] **Feature 3: Posts & Cloudflare R2 Media Uploads** (Backend has presigned URL service and schema; **missing Post CRUD endpoints and frontend post creation route**)
-- [ ] **Feature 4: Comments & Likes System** (Schema lacks `Comment` and `Like` tables; **no backend endpoints; frontend is local UI state only**)
+- [x] **Feature 2.5: Instagram-Style User Stories (Full-Stack Completed)** (Completed Prisma schema, REST endpoints, BullMQ cleanup worker, view receipts, dedicated full-screen viewer, segmented progress timer, touch/swipe/keyboard navigation, reactions, feed integration, back navigation, and safe-area insets)
+- [ ] **Feature 3: Posts & Cloudflare R2 Media Uploads** (Frontend feed features modular `PostCard`, double-tap likes, comments drawer, report flow, hashtag filtering, and "Not Interested" dismissal; backend has presigned URL service and Prisma `Post`/`PostMedia` models. **Backend Post CRUD endpoints and frontend `/create` page remain pending**)
+- [ ] **Feature 4: Comments & Likes System** (Frontend has interactive UI state in `PostCard` & comments drawer; **database tables and backend endpoints not yet implemented**)
 - [ ] **Feature 5: Activity Feed** (Feed algorithm, fan-out, and API endpoint not yet implemented)
 - [ ] **Feature 6: Realtime Chat** (No WebSocket gateway in NestJS; no Chat/Message models in Prisma)
 - [ ] **Feature 7: Video Processing Pipeline** (BullMQ queue exists; FFmpeg transcoding job handler is a stub)
@@ -215,10 +249,8 @@ According to `README.md` and codebase verification:
 
 1. **Missing `/create` Route**:
    - The center "+" button in `apps/web/components/bottom-tab-bar.tsx` navigates to `/create`, but `apps/web/app/create/page.tsx` does not exist, triggering a 404.
-2. **Missing Auth Utility Pages**:
-   - `app/(auth)/login/page.tsx` links to `/forgot-password`.
-   - `app/(auth)/signup/page.tsx` links to `/terms` and `/privacy`.
-   - None of these routes are currently implemented.
+2. **Missing Auth Legal Links**:
+   - `app/(auth)/signup/page.tsx` links to `/terms` and `/privacy`. Neither route is currently implemented.
 3. **No NestJS WebSocket Gateway**:
    - `apps/web/providers/socket-provider.tsx` attempts to connect to `http://localhost:4000` via `socket.io-client`. Because no gateway is registered in `apps/api`, connection errors occur in the client console.
 4. **Multiple PrismaClient Instances**:
@@ -229,8 +261,8 @@ According to `README.md` and codebase verification:
    - *Impact:* Creates multiple connection pools to PostgreSQL rather than sharing a single pooled connection.
 5. **PostgreSQL Port in Docker**:
    - `docker-compose.yml` maps PostgreSQL to host port `5433` (`5433:5432`), and `.env` specifies port `5433`. Ensure local development connects to port 5433 and not the standard 5432.
-6. **Authentication Transition**:
-   - Better Auth has been completely removed across both `apps/web` and `apps/api`. Ready for Firebase Authentication.
+6. **Firebase Environment Variables**:
+   - Production operation requires Firebase project credentials (`NEXT_PUBLIC_FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` or service account JSON). Build-time stub defaults are provided in `client.ts` and `admin.ts` to allow static prerendering without crashing.
 7. **Debug Statement**:
    - `apps/web/app/chat/page.tsx` line 2 contains `console.log("changes 2 made here");`.
 
@@ -253,8 +285,11 @@ npm run db:generate
 # Run full project typecheck across all workspaces
 npm run typecheck
 
-# Run tests (runs 8 test suites in apps/api)
+# Run unit tests across all workspaces (64 in apps/api, 10 in apps/web)
 npm run test
+
+# Run Next.js production build across workspaces
+npm run build
 
 # Start development servers (Web on :3000, API on :4000, Worker concurrently)
 npm run dev
@@ -269,28 +304,40 @@ npm run dev --workspace=@social/worker
 
 ## 11. Git Branch & Verification Status
 
-### Active Branch: `story_page`
+### Active Branch: `menu/reportcntent`
 
 ### Recent Commits
-1. `6eaaef3`: `add story page`
-   - Added full-screen story viewer (`apps/web/components/story-viewer.tsx`).
-   - Added Next.js dynamic story routes (`apps/web/app/stories/[username]/page.tsx` and `app/stories/page.tsx`).
-   - Integrated story circles in home feed (`apps/web/app/(app)/page.tsx`) with creator story groups.
-   - Added mock story dataset (`apps/web/lib/stories-data.ts`) with 9 creator profiles matching feed posts.
-2. `7d94a97`: `feat(stories): complete backend API, database schema, and cleanup worker`
-   - Added `Story` and `StoryView` models to `packages/database/prisma/schema.prisma`.
-   - Added shared story types, DTOs, and Zod schemas in `packages/types` and `packages/validation`.
-   - Built `StoriesModule` (`StoriesController`, `StoriesService`, DTOs) in `apps/api` with full CRUD, view recording, and feed queries.
-   - Implemented BullMQ `storiesQueue` and `story:cleanup_expired` job in `apps/worker` to purge 24-hour expired stories.
-   - Extended `apiClient.stories` and exported `api` in `apps/web/lib/api-client.ts`.
-   - Added Jest unit tests for `StoriesController` (coverage for all 6 endpoints).
+1. `5aec364`: `report for each content in homepage`
+   - Modularized home feed with `PostCard` (`apps/web/components/post-card.tsx`).
+   - Implemented three-dot post menu with "Report Content" and "Not Interested in This Content".
+   - Created `ReportBottomSheet` (`apps/web/components/report-bottom-sheet.tsx`) for user reporting with category/reason validation and feedback toast.
+   - Built "Not Interested" dismissal with black translucent overlay (`bg-black/80`), 3-second auto-removal, and smooth card height collapse.
+   - Added interactive double-tap like with animated heart icon, hashtag click filtering, and comments drawer in `page.tsx`.
+   - Introduced comprehensive Playwright E2E testing suite in `apps/web/tests-e2e/` with route protection verification, form validation, and desktop/mobile screenshots.
+2. `9bca3bc`: `firebase auth integration`
+   - Migrated authentication completely from Better Auth to Firebase Authentication.
+   - Removed Better Auth models (`Session`, `Account`, `Verification`) from `packages/database/prisma/schema.prisma`.
+   - Built Firebase Client SDK (`apps/web/lib/firebase/client.ts`) with Google Sign-In and emulator support.
+   - Built Firebase Admin SDK (`apps/web/lib/firebase/admin.ts`, `apps/api/src/auth/auth.service.ts`).
+   - Implemented server session cookie handling (`/api/auth/session`, `/api/auth/logout`, `apps/web/lib/firebase/server-auth.ts`).
+   - Added Next.js Edge route guard `middleware.ts` protecting private routes.
+   - Implemented `/forgot-password` (`apps/web/app/(auth)/forgot-password/page.tsx`) with form validation and reset email dispatch.
+   - Updated `apps/api` `AuthService`, `AuthGuard`, `OptionalAuthGuard` with Firebase token validation and PostgreSQL user linkage.
+   - Added unit test suites for Firebase errors (`apps/web/lib/firebase/errors.test.ts`) and API auth (`apps/api/src/auth/auth.service.spec.ts`).
+3. `cc3a7bd`: `docs: update implementation status and branch verification in PROJECT_CONTEXT.md`
+4. `7d94a97`: `feat(stories): complete backend API, database schema, and cleanup worker`
+5. `6eaaef3`: `add story page`
+
+### Working Copy Modifications (`apps/web/components/story-viewer.tsx`)
+- Added top-left back button (`ChevronLeft`) with touch-friendly hit target in both story author header and invalid-user fallback screen.
+- Implemented smart in-app referrer/history detection (`hasInAppHistoryRef`): uses `router.back()` if navigation started inside the app, falling back to `/` if accessed directly.
+- Added mobile safe area padding: `calc(env(safe-area-inset-top, 0px) + ...)`.
+- Added instant completion check for cached/pre-loaded images.
 
 ### Verification Matrix
 - **Typecheck**: `npm run typecheck` passes cleanly across all 8 monorepo workspaces.
-- **Unit Tests**: `npm run test` passes with 8/8 suites and 60/60 unit tests green.
-- **Web Build**: `npm run build --workspace=@social/web` compiles all 14 static and dynamic routes.
-- **API Build**: `npm run build --workspace=@social/api` compiles NestJS production bundle.
+- **Unit Tests**: `npm run test` passes with 74/74 unit tests green (64 tests in `apps/api`, 10 tests in `apps/web`).
+- **Web Build**: `npm run build --workspace=@social/web` compiles all 17 static/dynamic routes and edge middleware.
+- **API Build**: `npm run build --workspace=@social/api` compiles NestJS production bundle cleanly.
 - **Worker Build**: `npm run build --workspace=@social/worker` compiles cleanly.
-
-### Pending Infrastructure Step
-- **Database Schema Push**: Once the PostgreSQL Docker container is running locally (`docker-compose up -d postgres` on port 5433), execute `npm run db:push` to sync the new `stories` and `story_views` tables with the live database.
+- **E2E Tests**: Playwright test suite in `apps/web/tests-e2e/` passes route protection, authentication, and form validation tests.

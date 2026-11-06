@@ -5,7 +5,9 @@ import Link from 'next/link';
 import {
   X,
   Sparkles,
+  LogIn,
 } from 'lucide-react';
+import { useAuth } from '@/providers/auth-provider';
 import { SearchBar } from '@/components/search-bar';
 import { USER_STORIES } from '@/lib/stories-data';
 import { PostCard } from '@/components/post-card';
@@ -266,6 +268,7 @@ const INITIAL_POSTS: Post[] = [
 ];
 
 export default function HomePage() {
+  const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'for-you' | 'following'>('for-you');
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
@@ -461,20 +464,62 @@ export default function HomePage() {
           SocialFeed
         </h1>
 
-        {/* Right: User avatar with blue ring */}
-        <Link
-          href="/profile"
-          className="w-8 h-8 rounded-full ring-2 ring-blue-500 overflow-hidden active:scale-95 transition-transform shrink-0"
-          aria-label="Go to profile"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/avatars/avatar-olivia.jpg"
-            alt="Olivia Martinez"
-            className="w-full h-full object-cover"
-          />
-        </Link>
+        {/* Right: User avatar with blue ring OR Login button */}
+        {user ? (
+          <Link
+            href="/profile"
+            className="w-8 h-8 rounded-full ring-2 ring-blue-500 overflow-hidden active:scale-95 transition-transform shrink-0 flex items-center justify-center bg-slate-100"
+            aria-label="Go to profile"
+          >
+            {user.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.avatarUrl}
+                alt={user.name || user.username || 'Profile'}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xs font-bold text-blue-600 uppercase">
+                {(user.name || user.username || 'U').charAt(0)}
+              </span>
+            )}
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="h-8 px-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold rounded-full shadow-xs flex items-center justify-center gap-1.5 transition-all shrink-0"
+            aria-label="Log in to sign in"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Log In</span>
+          </Link>
+        )}
       </header>
+
+      {/* Top Banner when user profile is not available */}
+      {!user && !isLoading && (
+        <div className="mx-4 mt-1 mb-2 p-3 bg-blue-50/80 border border-blue-100 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0">
+              <LogIn className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-slate-900 truncate">
+                Sign in to SocialFeed
+              </p>
+              <p className="text-[11px] text-slate-500 truncate">
+                Connect with creators, like, and comment
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/login"
+            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-full shadow-xs shrink-0 active:scale-95 transition-all"
+          >
+            Sign In
+          </Link>
+        </div>
+      )}
 
       {/* 2. Search Bar with Smart Dropdown */}
       <div className="px-4 pt-1 pb-3 shrink-0">

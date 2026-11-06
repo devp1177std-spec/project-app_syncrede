@@ -36,10 +36,10 @@ export default function LoginPage() {
     setFormError(null);
     const res = await loginWithCredentials(data.identifier, data.password);
     if (res.success) {
-      if (!isOnboarded) {
-        router.push('/create-profile');
-      } else {
+      if (res.onboardingStatus === 'COMPLETED' || res.onboardingStatus === 'SKIPPED' || res.isOnboarded) {
         router.push('/');
+      } else {
+        router.push('/create-profile');
       }
     } else {
       setFormError(res.error || 'Invalid credentials');
@@ -54,10 +54,10 @@ export default function LoginPage() {
     try {
       const res = await loginWithGoogle();
       if (res.success) {
-        if (!isOnboarded) {
-          router.push('/create-profile');
-        } else {
+        if (res.onboardingStatus === 'COMPLETED' || res.onboardingStatus === 'SKIPPED' || res.isOnboarded) {
           router.push('/');
+        } else {
+          router.push('/create-profile');
         }
       } else if (res.error) {
         setFormError(res.error);

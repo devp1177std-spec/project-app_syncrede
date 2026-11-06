@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Verify the ID token using Firebase Admin
-    const decodedToken = await adminAuth.verifyIdToken(idToken, true);
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
 
     // 4. Create the session cookie
     const sessionCookie = await adminAuth.createSessionCookie(idToken, {

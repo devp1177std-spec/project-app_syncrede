@@ -37,8 +37,28 @@ async function runTestSuite() {
       const context = await browser.newContext();
       const page = await context.newPage();
 
+      // 1. Verify Home Page is accessible publicly and renders Login button on top when unauthenticated
+      await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' });
+      const currentHomeUrl = page.url();
+      const loginButtonOnHome = await page
+        .locator('header a[href="/login"], a[href="/login"]:has-text("Log In"), a[href="/login"]:has-text("Sign In")')
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      if (loginButtonOnHome) {
+        recordResult('Route Protection', 'Home page public access & Login button visibility', 'PASSED', {
+          url: currentHomeUrl,
+          note: 'Home page renders with login button on top when user profile is not available',
+        });
+      } else {
+        recordResult('Route Protection', 'Home page public access & Login button visibility', 'FAILED', {
+          url: currentHomeUrl,
+          note: 'Failed to display login button on top of home page',
+        });
+      }
+
       const protectedRoutes = [
-        { path: '/', expectedRedirect: '/login' },
         { path: '/profile', expectedRedirect: '/login?redirect=%2Fprofile' },
         { path: '/create-profile', expectedRedirect: '/login?redirect=%2Fcreate-profile' },
         { path: '/chat', expectedRedirect: '/login?redirect=%2Fchat' },

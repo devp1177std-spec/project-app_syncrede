@@ -5,6 +5,30 @@ const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 export const redisConnection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
   lazyConnect: true,
+  enableReadyCheck: true,
+  retryStrategy(times) {
+    return Math.min(times * 500, 5000);
+  },
+});
+
+redisConnection.on('connect', () => {
+  console.log('[Worker Service] Connected to Redis successfully.');
+});
+
+redisConnection.on('ready', () => {
+  console.log('[Worker Service] Redis client ready.');
+});
+
+redisConnection.on('reconnecting', (delay: number) => {
+  console.warn(`[Worker Service] Redis client reconnecting in ${delay}ms...`);
+});
+
+redisConnection.on('close', () => {
+  console.warn('[Worker Service] Redis connection closed.');
+});
+
+redisConnection.on('error', (err) => {
+  console.warn(`[Worker Service] Redis connection error: ${err.message}`);
 });
 
 export const videoProcessingQueue = new Queue('video-processing', {

@@ -20,9 +20,11 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('__session')?.value;
   const isAuthenticated = Boolean(sessionCookie);
 
-  const isPublicRoute = PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
+  const isPublicRoute =
+    pathname === '/' ||
+    PUBLIC_ROUTES.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
 
   // 2. Redirect unauthenticated users to /login when requesting protected pages
   if (!isAuthenticated && !isPublicRoute) {

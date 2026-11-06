@@ -12,6 +12,8 @@ interface ProfileActionsProps {
   onTabChange: (tab: 'posts' | 'following') => void;
   onFollowToggle: () => void;
   onMessage: () => void;
+  onEditProfile?: () => void;
+  onShare?: () => void;
 }
 
 export function ProfileActions({
@@ -23,9 +25,33 @@ export function ProfileActions({
   onTabChange,
   onFollowToggle,
   onMessage,
+  onEditProfile,
+  onShare,
 }: ProfileActionsProps) {
   return (
     <div className="w-full px-5 mt-4 flex flex-col items-center">
+      {/* "Own Profile" Mode: Edit Profile & Share Profile Action Buttons */}
+      {isOwnProfile && (
+        <div className="w-full max-w-[342px] flex items-center gap-3 mb-4">
+          <Button
+            type="button"
+            onClick={onEditProfile}
+            variant="outline"
+            className="flex-1 h-10 rounded-full text-xs font-semibold tracking-wide bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200/60 transition-all active:scale-98 shadow-xs"
+          >
+            Edit Profile
+          </Button>
+          <Button
+            type="button"
+            onClick={onShare}
+            variant="outline"
+            className="flex-1 h-10 rounded-full text-xs font-semibold tracking-wide bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200/60 transition-all active:scale-98 shadow-xs"
+          >
+            Share Profile
+          </Button>
+        </div>
+      )}
+
       {/* "Others" Mode: Follow & Message Action Buttons */}
       {!isOwnProfile && (
         <div className="w-full max-w-[342px] flex items-center gap-3 mb-4">

@@ -21,6 +21,18 @@ import { RedisService } from './redis.service';
             return Math.min(times * 500, 5000);
           },
         });
+        client.on('connect', () => {
+          logger.log('Connected to Redis successfully.');
+        });
+        client.on('ready', () => {
+          logger.log('Redis client is ready.');
+        });
+        client.on('reconnecting', (delay: number) => {
+          logger.warn(`Redis client reconnecting in ${delay}ms...`);
+        });
+        client.on('close', () => {
+          logger.warn('Redis connection closed.');
+        });
         client.on('error', (err) => {
           logger.warn(`Redis connection error: ${err.message}`);
         });

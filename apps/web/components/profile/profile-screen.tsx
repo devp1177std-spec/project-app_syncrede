@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '@/hooks/use-profile';
 import { useUserPosts } from '@/hooks/use-user-posts';
 import { useFollowMutation } from '@/hooks/use-follow-mutation';
@@ -14,6 +15,7 @@ import { ProfilePostsGrid } from './profile-posts-grid';
 import { ProfileSkeleton } from './profile-skeleton';
 import { ProfileMoreSheet } from './profile-more-sheet';
 import { ProfileModeToggle } from './profile-mode-toggle';
+import { EditProfileModal } from './edit-profile-modal';
 
 import { useAuth } from '@/providers/auth-provider';
 
@@ -29,14 +31,13 @@ export function ProfileScreen({
   showModeToggle = false,
 }: ProfileScreenProps) {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
+  const { user, logout, isLoading: isAuthLoading } = useAuth();
   const [isOwnProfile, setIsOwnProfile] = useState(initialOwnProfile);
   const [sort, setSort] = useState<SortOrder>('latest');
   const [activeTab, setActiveTab] = useState<'posts' | 'following'>('posts');
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-
-  // If viewing own profile and logged-in user has a username, query their live backend data
-  const effectiveUsername = isOwnProfile && user?.username ? user.username : initialUsername;
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Queries & Mutations
   const {
@@ -45,7 +46,7 @@ export function ProfileScreen({
     isError: isProfileError,
     refetch: refetchProfile,
   } = useProfile({
-    username: effectiveUsername,
+    username: isOwnProfile ? undefined : initialUsername,
     isOwnProfile,
   });
 
@@ -58,18 +59,19 @@ export function ProfileScreen({
     fetchNextPage,
     refetch: refetchPosts,
   } = useUserPosts({
-    username: effectiveUsername,
+    username: profile?.username,
     sort,
     limit: 18,
   });
 
-  const followMutation = useFollowMutation({ username: effectiveUsername });
+  const followMutation = useFollowMutation({ username: profile?.username || initialUsername });
   const { share, copied } = useShareProfile();
 
   // Flatten posts across pages
   const posts = postsData?.pages.flatMap((page) => page.items) || [];
 
-  if (isProfileLoading && !profile) {
+  // Show skeleton if auth or profile data is resolving
+  if ((isProfileLoading || (isAuthLoading && isOwnProfile)) && !profile) {
     return <ProfileSkeleton />;
   }
 
@@ -82,7 +84,7 @@ export function ProfileScreen({
         <button
           type="button"
           onClick={() => refetchProfile()}
-          className="mt-3 px-4 py-2 rounded-full bg-blue-600 text-white text-xs font-semibold"
+          className="mt-3 px-4 py-2 rounded-full bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition"
         >
           Try Again
         </button>
@@ -109,6 +111,12 @@ export function ProfileScreen({
     router.push(`/chat/${profile.id}`);
   };
 
+  const handleProfileUpdated = () => {
+    refetchProfile();
+    refetchPosts();
+    queryClient.invalidateQueries({ queryKey: ['profile'] });
+  };
+
   return (
     <div className="w-full flex-1 flex flex-col bg-white select-none">
       {/* Optional Mode Toggle at top for demo inspection */}
@@ -126,19 +134,39 @@ export function ProfileScreen({
         </div>
       )}
 
-      {/* 1. Header with Cover, Avatar, Name & Verified Badge */}
+      {/* 1. Header with Cover, Avatar, Name, Verified Badge, Location & Website */}
       <ProfileHeader
         profile={profile}
         onShare={handleShare}
         onOpenMore={() => setIsMoreOpen(true)}
       />
 
-      {/* 2. Stats Card (Followers / Following / Posts) */}
+      {/* 2. Interactive Flip Card (Followers / Following / Posts <-> Bio / Website / Location) */}
       <ProfileStats
         followerCount={profile.followerCount}
         followingCount={profile.followingCount}
         postCount={profile.postCount}
+        bio={profile.bio}
+        website={profile.website}
+        location={profile.location}
       />
+
+      {/* Skipped Onboarding Completion Banner */}
+      {isOwnProfile && profile?.onboardingStatus === 'SKIPPED' && (
+        <div className="w-full max-w-[342px] mx-auto mt-3 px-4 py-3 bg-amber-50/90 border border-amber-200/80 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+          <div className="space-y-0.5 text-left">
+            <p className="text-xs font-bold text-amber-900">Finish setting up profile</p>
+            <p className="text-[11px] text-amber-700">Add your bio, avatar and details</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsEditModalOpen(true)}
+            className="px-3 py-1.5 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs whitespace-nowrap shadow-xs transition"
+          >
+            Edit Profile
+          </button>
+        </div>
+      )}
 
       {/* 3. Action Buttons & Tabs (Own vs Others) */}
       <ProfileActions
@@ -150,6 +178,8 @@ export function ProfileScreen({
         onTabChange={(tab) => setActiveTab(tab)}
         onFollowToggle={handleFollowToggle}
         onMessage={handleMessage}
+        onEditProfile={() => setIsEditModalOpen(true)}
+        onShare={handleShare}
       />
 
       {/* 4. Tab Views: My Posts vs Following */}
@@ -194,8 +224,19 @@ export function ProfileScreen({
         copied={copied}
         onMute={() => alert(`Muted @${profile.username}`)}
         onBlock={() => alert(`Blocked @${profile.username}`)}
-        onEditProfile={() => alert('Edit profile')}
+        onEditProfile={() => {
+          setIsMoreOpen(false);
+          setIsEditModalOpen(true);
+        }}
         onLogout={logout}
+      />
+
+      {/* Edit Profile Modal Dialog */}
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        profile={profile}
+        onProfileUpdated={handleProfileUpdated}
       />
     </div>
   );

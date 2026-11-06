@@ -8,6 +8,8 @@
     "packages/*"
   ],
   "scripts": {
+    "check:services": "node scripts/check-services.js",
+    "predev": "node scripts/check-services.js",
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "test": "turbo run test",

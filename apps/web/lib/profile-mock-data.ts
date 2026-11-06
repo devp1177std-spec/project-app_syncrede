@@ -7,6 +7,8 @@ export const MOCK_OWN_PROFILE: UserProfileResponse = {
   bio: 'Spatial architect & minimalist designer based in San Francisco. Documenting forms & light.',
   avatar: '/images/avatars/avatar-olivia.jpg',
   cover: 'linear-gradient(135deg, #38BDF8 0%, #2563EB 50%, #1D4ED8 100%)',
+  location: 'San Francisco, CA',
+  website: 'https://oliviamartinez.design',
   verified: true,
   isOnline: true,
   isPrivate: false,

@@ -41,24 +41,25 @@ export async function fetchApi<T = unknown>(
 
   try {
     let token: string | null = null;
-    if (typeof window !== 'undefined' && auth.currentUser) {
-      try {
-        // Automatically fetch or refresh valid ID token from Firebase
-        token = await auth.currentUser.getIdToken(false);
-        setAuthToken(token);
-      } catch (err: any) {
-        if (
-          err?.code === 'auth/user-token-expired' ||
-          err?.code === 'auth/id-token-expired' ||
-          err?.code === 'auth/id-token-revoked'
-        ) {
-          setAuthToken(null);
+    if (typeof window !== 'undefined') {
+      if (!auth.currentUser && typeof auth.authStateReady === 'function') {
+        try {
+          await auth.authStateReady();
+        } catch {
+          // ignore error waiting for auth state ready
         }
       }
-    }
 
-    if (!token) {
-      token = getAuthToken();
+      if (auth.currentUser) {
+        try {
+          // Automatically fetch valid ID token from Firebase (or silently refreshes if expiring)
+          token = await auth.currentUser.getIdToken(false);
+          setAuthToken(token);
+        } catch {
+          setAuthToken(null);
+          token = null;
+        }
+      }
     }
 
     let res = await fetch(url, {
@@ -86,7 +87,8 @@ export async function fetchApi<T = unknown>(
           credentials: 'include',
         });
       } catch {
-        // Force refresh failed, proceed with response
+        // Force refresh failed, reset token
+        setAuthToken(null);
       }
     }
 
@@ -140,6 +142,10 @@ export const apiClient = {
         method: 'PATCH',
         body: JSON.stringify(data),
       });
+    },
+
+    async getMe(): Promise<ApiResponse<UserProfileResponse>> {
+      return fetchApi<UserProfileResponse>('api/users/me');
     },
 
     async getProfile(username: string): Promise<ApiResponse<UserProfileResponse>> {

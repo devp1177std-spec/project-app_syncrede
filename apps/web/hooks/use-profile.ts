@@ -12,7 +12,7 @@ interface UseProfileOptions {
 
 export function useProfile({ username, isOwnProfile = false }: UseProfileOptions) {
   return useQuery<UserProfileResponse>({
-    queryKey: ['profile', isOwnProfile ? 'me' : username],
+    queryKey: ['profile', isOwnProfile ? 'me' : username, isOwnProfile],
     queryFn: async () => {
       if (isOwnProfile) {
         try {

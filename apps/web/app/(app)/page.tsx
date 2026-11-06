@@ -379,7 +379,7 @@ export default function HomePage() {
   }, []);
 
   const handleReportSubmit = useCallback((_post: Post, _comment: string) => {
-    showToast('Report submitted. Thank you for your feedback.');
+    showToast('Reporting is not available yet. Your report was not submitted.');
   }, [showToast]);
 
   const handleAddComment = (e: React.FormEvent) => {

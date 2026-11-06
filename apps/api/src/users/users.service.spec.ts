@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersService } from './users.service';
+import { UsersService, getOnboardingStatus } from './users.service';
 import { REDIS_CLIENT } from '../redis/redis.constants';
 import { NOTIFICATIONS_QUEUE_TOKEN, NOTIFICATION_JOBS } from '../bullmq/bullmq.constants';
 import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
@@ -109,6 +109,8 @@ describe('UsersService', () => {
       bio: 'Developer & Creator',
       image: 'https://cdn.example.com/avatar.jpg',
       coverImage: 'https://cdn.example.com/cover.jpg',
+      location: 'San Francisco, CA',
+      website: 'https://janedoe.dev',
       isVerified: true,
       isPrivate: false,
       followerCount: 150,
@@ -129,6 +131,8 @@ describe('UsersService', () => {
         bio: 'Developer & Creator',
         avatar: 'https://cdn.example.com/avatar.jpg',
         cover: 'https://cdn.example.com/cover.jpg',
+        location: 'San Francisco, CA',
+        website: 'https://janedoe.dev',
         verified: true,
         isOnline: true,
         isPrivate: false,
@@ -483,6 +487,95 @@ describe('UsersService', () => {
         NOTIFICATION_JOBS.VERIFICATION_APPROVED,
         expect.objectContaining({ userId: 'user_1' }),
       );
+    });
+  });
+
+  // ==========================================
+  // ONBOARDING STATUS & PROFILE UPDATE TESTS
+  // ==========================================
+  describe('Onboarding Status & updateProfile transitions', () => {
+    it('getOnboardingStatus correctly identifies COMPLETED, SKIPPED, and NOT_COMPLETED', () => {
+      expect(getOnboardingStatus({ onboardingCompletedAt: new Date(), onboardingSkipped: false })).toBe('COMPLETED');
+      expect(getOnboardingStatus({ onboardingCompletedAt: null, onboardingSkipped: true })).toBe('SKIPPED');
+      expect(getOnboardingStatus({ onboardingCompletedAt: null, onboardingSkipped: false })).toBe('NOT_COMPLETED');
+      expect(getOnboardingStatus({})).toBe('NOT_COMPLETED');
+    });
+
+    it('updateProfile with skip=true sets onboardingSkipped=true and onboardingCompletedAt=null', async () => {
+      mockPrisma.user.update.mockImplementation(({ data }: any) => Promise.resolve({ id: 'u1', ...data }));
+
+      const res = await service.updateProfile('u1', { skip: true });
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: expect.objectContaining({
+          onboardingSkipped: true,
+          onboardingCompletedAt: null,
+        }),
+      });
+    });
+
+    it('updateProfile with completeOnboarding=true sets onboardingCompletedAt and resets onboardingSkipped to false', async () => {
+      mockPrisma.user.update.mockImplementation(({ data }: any) => Promise.resolve({ id: 'u1', ...data }));
+
+      const res = await service.updateProfile('u1', {
+        bio: 'Updated bio from Edit Profile',
+        completeOnboarding: true,
+        skip: false,
+      });
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: expect.objectContaining({
+          bio: 'Updated bio from Edit Profile',
+          onboardingCompletedAt: expect.any(Date),
+          onboardingSkipped: false,
+        }),
+      });
+    });
+
+    it('updateProfile with completeOnboarding=false leaves onboardingCompletedAt and onboardingSkipped untouched', async () => {
+      mockPrisma.user.update.mockImplementation(({ data }: any) => Promise.resolve({ id: 'u1', ...data }));
+      mockPrisma.user.findFirst.mockResolvedValue(null);
+
+      const res = await service.updateProfile('u1', {
+        username: 'brand_new_user',
+        completeOnboarding: false,
+        skip: false,
+      });
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: expect.not.objectContaining({
+          onboardingCompletedAt: expect.anything(),
+          onboardingSkipped: expect.anything(),
+        }),
+      });
+    });
+
+    it('getProfileByUsername returns onboarding fields and status when present', async () => {
+      const completionDate = new Date();
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: 'u1',
+        name: 'Alex',
+        username: 'alex',
+        bio: 'Bio',
+        image: null,
+        coverImage: null,
+        location: null,
+        website: null,
+        isVerified: true,
+        isPrivate: false,
+        followerCount: 0,
+        followingCount: 0,
+        postCount: 0,
+        onboardingCompletedAt: completionDate,
+        onboardingSkipped: false,
+      });
+
+      const profile = await service.getProfileByUsername('alex');
+      expect(profile.onboardingStatus).toBe('COMPLETED');
+      expect(profile.onboardingCompletedAt).toBe(completionDate);
+      expect(profile.onboardingSkipped).toBe(false);
     });
   });
 });

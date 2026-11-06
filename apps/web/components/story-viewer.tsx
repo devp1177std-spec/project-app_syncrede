@@ -82,6 +82,25 @@ export function StoryViewer({
   const [replyText, setReplyText] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
+  const hasInAppHistoryRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isInternalReferrer = Boolean(
+        document.referrer && document.referrer.includes(window.location.host)
+      );
+      const navEntry = window.performance?.getEntriesByType?.('navigation')?.[0] as
+        | PerformanceNavigationTiming
+        | undefined;
+      const initialUrl = navEntry?.name || '';
+      const startedOutsideStories =
+        Boolean(initialUrl) && !initialUrl.includes('/stories');
+
+      if (isInternalReferrer || startedOutsideStories) {
+        hasInAppHistoryRef.current = true;
+      }
+    }
+  }, []);
 
   // Refs for timers & touch
   const animFrameRef = useRef<number | null>(null);
@@ -116,6 +135,37 @@ export function StoryViewer({
       router.push('/');
     }
   }, [onClose, router]);
+
+  const handleBack = useCallback(
+    (e?: React.MouseEvent | React.TouchEvent) => {
+      if (e) {
+        e.stopPropagation();
+      }
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+      if (onClose) {
+        onClose();
+        return;
+      }
+      // Navigate back to previous page; fallback to home ('/') if history is unavailable
+      if (hasInAppHistoryRef.current && typeof window !== 'undefined' && window.history.length > 1) {
+        router.back();
+        setTimeout(() => {
+          if (
+            typeof window !== 'undefined' &&
+            window.location.pathname.startsWith('/stories')
+          ) {
+            router.push('/');
+          }
+        }, 300);
+      } else {
+        router.push('/');
+      }
+    },
+    [onClose, router]
+  );
 
   // Advance to next story / next user
   const handleNextStory = useCallback(() => {
@@ -459,6 +509,20 @@ export function StoryViewer({
   if (isInvalidUser || !currentUserGroup || !currentStory) {
     return (
       <div className="fixed inset-0 z-50 bg-[#0a0a0c] text-white flex flex-col items-center justify-center p-6 select-none">
+        {/* Back Button */}
+        <button
+          type="button"
+          onClick={handleBack}
+          className="absolute top-4 left-4 z-50 relative before:absolute before:-inset-1.5 before:content-[''] w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/60 active:scale-90 backdrop-blur-md text-white flex items-center justify-center transition-all duration-150 border border-white/10 shadow-xs touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+          style={{
+            top: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+            left: 'calc(env(safe-area-inset-left, 0px) + 16px)',
+          }}
+          aria-label="Go back"
+        >
+          <ChevronLeft className="w-5 h-5 text-white stroke-[2.5]" />
+        </button>
+
         <div className="w-16 h-16 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center mb-4 text-blue-400">
           <AlertCircle className="w-8 h-8 stroke-[1.8]" />
         </div>
@@ -614,6 +678,12 @@ export function StoryViewer({
               key={currentStory.id}
               src={currentStory.mediaUrl}
               alt={currentStory.caption || `@${currentUserGroup.username}'s story`}
+              ref={(img) => {
+                if (img && img.complete && img.naturalWidth > 0 && mediaLoading) {
+                  setMediaLoading(false);
+                  setMediaError(false);
+                }
+              }}
               onLoad={() => {
                 setMediaLoading(false);
                 setMediaError(false);
@@ -664,6 +734,11 @@ export function StoryViewer({
           className={`relative z-20 p-3 pt-3 sm:pt-4 flex flex-col gap-2.5 transition-opacity duration-200 ${
             isHolding ? 'opacity-0' : 'opacity-100'
           }`}
+          style={{
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+            paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 12px)',
+            paddingRight: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+          }}
         >
           {/* Segmented Progress Bars */}
           <div className="w-full flex items-center gap-1.5 px-1">
@@ -691,8 +766,23 @@ export function StoryViewer({
 
           {/* Story Author Header */}
           <div className="flex items-center justify-between px-1">
-            {/* Left: Avatar + Username + Time + Location */}
-            <div className="flex items-center gap-2.5 min-w-0">
+            {/* Left: Back Button + Avatar + Username + Time + Location */}
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Back Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleBack(e);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+                className="relative before:absolute before:-inset-1.5 before:content-[''] w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 active:scale-90 backdrop-blur-md text-white flex items-center justify-center transition-all duration-150 shrink-0 border border-white/10 shadow-xs z-30 touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                aria-label="Go back"
+              >
+                <ChevronLeft className="w-5 h-5 text-white stroke-[2.5]" />
+              </button>
+
               <Link
                 href={`/profile/${currentUserGroup.username}`}
                 onClick={(e) => e.stopPropagation()}

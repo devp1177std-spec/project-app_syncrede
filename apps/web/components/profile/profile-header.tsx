@@ -109,13 +109,6 @@ export function ProfileHeader({
           <p className="text-xs font-semibold text-blue-600 mt-0.5">
             @{profile.username}
           </p>
-
-          {/* Bio Description */}
-          {profile.bio && (
-            <p className="text-xs text-slate-600 max-w-[280px] leading-relaxed mt-2 font-normal text-center">
-              {profile.bio}
-            </p>
-          )}
         </div>
       </div>
     </div>

@@ -1,49 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  Heart,
-  MessageCircle,
-  Send,
-  Bookmark,
-  Search,
-  MoreHorizontal,
   X,
   Sparkles,
+  LogIn,
 } from 'lucide-react';
+import { useAuth } from '@/providers/auth-provider';
 import { SearchBar } from '@/components/search-bar';
 import { USER_STORIES } from '@/lib/stories-data';
+import { PostCard } from '@/components/post-card';
+import { ReportBottomSheet } from '@/components/report-bottom-sheet';
+import type { Post, CommentItem } from '@/types/post';
 
-interface CommentItem {
-  id: string;
-  user: string;
-  text: string;
-  timeAgo: string;
-}
-
-interface Post {
-  id: string;
-  author: {
-    username: string;
-    displayName: string;
-    avatarUrl: string;
-    isVerified: boolean;
-    location: string;
-    isFollowing: boolean;
-  };
-  mediaUrl: string;
-  mediaAlt: string;
-  caption: string;
-  tags?: string[];
-  likeCount: number;
-  commentCount: number;
-  likedByMe: boolean;
-  savedByMe: boolean;
-  timeAgo: string;
-  likedByPreviewUser?: string;
-  comments: CommentItem[];
-}
+export type { Post, CommentItem };
 
 const STORIES = USER_STORIES;
 
@@ -297,6 +268,7 @@ const INITIAL_POSTS: Post[] = [
 ];
 
 export default function HomePage() {
+  const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'for-you' | 'following'>('for-you');
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
@@ -304,13 +276,14 @@ export default function HomePage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
   const [commentInput, setCommentInput] = useState('');
+  const [reportingPost, setReportingPost] = useState<Post | null>(null);
 
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2400);
-  };
+  }, []);
 
-  const handleToggleLike = (postId: string) => {
+  const handleToggleLike = useCallback((postId: string) => {
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
@@ -325,9 +298,9 @@ export default function HomePage() {
         return post;
       })
     );
-  };
+  }, []);
 
-  const handleDoubleTap = (postId: string) => {
+  const handleDoubleTap = useCallback((postId: string) => {
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
@@ -344,9 +317,9 @@ export default function HomePage() {
     );
     setAnimatingHeartPostId(postId);
     setTimeout(() => setAnimatingHeartPostId(null), 900);
-  };
+  }, []);
 
-  const handleToggleSave = (postId: string) => {
+  const handleToggleSave = useCallback((postId: string) => {
     setPosts((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
@@ -360,9 +333,9 @@ export default function HomePage() {
         return post;
       })
     );
-  };
+  }, [showToast]);
 
-  const handleShare = async (post: Post) => {
+  const handleShare = useCallback(async (post: Post) => {
     const url = typeof window !== 'undefined' ? `${window.location.origin}/profile/${post.author.username}` : '';
     if (typeof window !== 'undefined' && navigator.clipboard) {
       await navigator.clipboard.writeText(url || window.location.href);
@@ -370,9 +343,9 @@ export default function HomePage() {
     } else {
       showToast('Share link ready');
     }
-  };
+  }, [showToast]);
 
-  const handleToggleFollow = (username: string) => {
+  const handleToggleFollow = useCallback((username: string) => {
     setPosts((prev) =>
       prev.map((post) => {
         if (post.author.username === username) {
@@ -389,12 +362,25 @@ export default function HomePage() {
         return post;
       })
     );
-  };
+  }, [showToast]);
 
-  const handleOpenComments = (post: Post) => {
+  const handleOpenComments = useCallback((post: Post) => {
     setActiveCommentPost(post);
     setCommentInput('');
-  };
+  }, []);
+
+  const handleRemovePost = useCallback((postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+    showToast('Post removed from feed');
+  }, [showToast]);
+
+  const handleReport = useCallback((post: Post) => {
+    setReportingPost(post);
+  }, []);
+
+  const handleReportSubmit = useCallback((_post: Post, _comment: string) => {
+    showToast('Reporting is not available yet. Your report was not submitted.');
+  }, [showToast]);
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -478,20 +464,62 @@ export default function HomePage() {
           SocialFeed
         </h1>
 
-        {/* Right: User avatar with blue ring */}
-        <Link
-          href="/profile"
-          className="w-8 h-8 rounded-full ring-2 ring-blue-500 overflow-hidden active:scale-95 transition-transform shrink-0"
-          aria-label="Go to profile"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/avatars/avatar-olivia.jpg"
-            alt="Olivia Martinez"
-            className="w-full h-full object-cover"
-          />
-        </Link>
+        {/* Right: User avatar with blue ring OR Login button */}
+        {user ? (
+          <Link
+            href="/profile"
+            className="w-8 h-8 rounded-full ring-2 ring-blue-500 overflow-hidden active:scale-95 transition-transform shrink-0 flex items-center justify-center bg-slate-100"
+            aria-label="Go to profile"
+          >
+            {user.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.avatarUrl}
+                alt={user.name || user.username || 'Profile'}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xs font-bold text-blue-600 uppercase">
+                {(user.name || user.username || 'U').charAt(0)}
+              </span>
+            )}
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="h-8 px-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold rounded-full shadow-xs flex items-center justify-center gap-1.5 transition-all shrink-0"
+            aria-label="Log in to sign in"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Log In</span>
+          </Link>
+        )}
       </header>
+
+      {/* Top Banner when user profile is not available */}
+      {!user && !isLoading && (
+        <div className="mx-4 mt-1 mb-2 p-3 bg-blue-50/80 border border-blue-100 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0">
+              <LogIn className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-slate-900 truncate">
+                Sign in to SocialFeed
+              </p>
+              <p className="text-[11px] text-slate-500 truncate">
+                Connect with creators, like, and comment
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/login"
+            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-full shadow-xs shrink-0 active:scale-95 transition-all"
+          >
+            Sign In
+          </Link>
+        </div>
+      )}
 
       {/* 2. Search Bar with Smart Dropdown */}
       <div className="px-4 pt-1 pb-3 shrink-0">
@@ -568,200 +596,20 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col divide-y divide-slate-100">
         {displayedPosts.length > 0 ? (
           displayedPosts.map((post) => (
-            <article key={post.id} className="w-full pt-2 pb-4 bg-white">
-              {/* Post Author Header */}
-              <div className="px-4 py-2 flex items-center justify-between">
-                <Link
-                  href={`/profile/${post.author.username}`}
-                  className="flex items-center gap-2.5 group"
-                >
-                  {/* Creator circle avatar */}
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-100 group-hover:ring-2 group-hover:ring-blue-500/30 transition-all shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={post.author.avatarUrl}
-                      alt={post.author.displayName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Username + verified badge + location */}
-                  <div>
-                    <div className="flex items-center gap-1 leading-none">
-                      <span className="font-bold text-[13px] text-slate-900 group-hover:text-blue-600 transition-colors">
-                        {post.author.username}
-                      </span>
-                      {/* Verified blue badge checkmark */}
-                      {post.author.isVerified && (
-                        <svg
-                          className="w-3.5 h-3.5 text-blue-600 shrink-0"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-4-4 1.41-1.41L11 13.67l6.59-6.59L19 8.5l-8 8z" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 text-[11px] text-slate-400 font-normal pt-0.5">
-                      <span>{post.author.location}</span>
-                      <span>•</span>
-                      <span>{post.timeAgo}</span>
-                    </div>
-                  </div>
-                </Link>
-
-                {/* More options menu / Follow button */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleFollow(post.author.username)}
-                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full transition ${
-                      post.author.isFollowing
-                        ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                    }`}
-                  >
-                    {post.author.isFollowing ? 'Following' : '+ Follow'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => showToast(`Options for @${post.author.username}`)}
-                    className="text-slate-400 hover:text-slate-600 p-1 rounded-full active:scale-95 transition-transform"
-                    aria-label="Post actions"
-                  >
-                    <MoreHorizontal className="w-5 h-5 stroke-[1.8]" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Post Media: Full photograph */}
-              <div
-                className="w-full relative overflow-hidden bg-slate-100 cursor-pointer"
-                onDoubleClick={() => handleDoubleTap(post.id)}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={post.mediaUrl}
-                  alt={post.mediaAlt}
-                  className="w-full h-auto max-h-[460px] object-cover block"
-                  loading="lazy"
-                />
-
-                {/* Double Tap Floating Heart Animation */}
-                {animatingHeartPostId === post.id && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-in zoom-in-50 fade-in duration-200">
-                    <Heart className="w-20 h-20 text-white fill-white drop-shadow-lg" />
-                  </div>
-                )}
-              </div>
-
-              {/* Post Action Bar */}
-              <div className="px-4 py-3 flex items-center justify-between">
-                {/* Left 3 Action Icons: Heart, Comment, Send */}
-                <div className="flex items-center gap-5 text-slate-800">
-                  {/* Heart / Like button */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleLike(post.id)}
-                    className="hover:opacity-80 active:scale-125 transition-transform"
-                    aria-label={post.likedByMe ? 'Unlike post' : 'Like post'}
-                  >
-                    <Heart
-                      className={`w-6 h-6 transition-colors ${
-                        post.likedByMe
-                          ? 'text-red-500 fill-red-500 stroke-red-500'
-                          : 'stroke-[1.8]'
-                      }`}
-                    />
-                  </button>
-
-                  {/* Comment button */}
-                  <button
-                    type="button"
-                    onClick={() => handleOpenComments(post)}
-                    className="hover:opacity-80 active:scale-110 transition-transform"
-                    aria-label="Comment on post"
-                  >
-                    <MessageCircle className="w-6 h-6 stroke-[1.8]" />
-                  </button>
-
-                  {/* Send / Direct Share button */}
-                  <button
-                    type="button"
-                    onClick={() => handleShare(post)}
-                    className="hover:opacity-80 active:scale-110 transition-transform -rotate-12"
-                    aria-label="Share post"
-                  >
-                    <Send className="w-6 h-6 stroke-[1.8]" />
-                  </button>
-                </div>
-
-                {/* Right Action: Bookmark ribbon */}
-                <button
-                  type="button"
-                  onClick={() => handleToggleSave(post.id)}
-                  className="hover:opacity-80 active:scale-110 transition-transform text-slate-800"
-                  aria-label={post.savedByMe ? 'Remove from saved' : 'Save post'}
-                >
-                  <Bookmark
-                    className={`w-6 h-6 transition-colors ${
-                      post.savedByMe
-                        ? 'text-blue-600 fill-blue-600 stroke-blue-600'
-                        : 'stroke-[1.8]'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Likes counter & Preview */}
-              <div className="px-4 space-y-1">
-                <p className="text-xs font-semibold text-slate-900">
-                  {post.likeCount.toLocaleString()} likes
-                  {post.likedByPreviewUser && (
-                    <span className="font-normal text-slate-500 ml-1">
-                      including <span className="font-medium text-slate-800">@{post.likedByPreviewUser}</span>
-                    </span>
-                  )}
-                </p>
-
-                {/* Caption & Tags */}
-                <p className="text-xs text-slate-800 leading-relaxed">
-                  <Link
-                    href={`/profile/${post.author.username}`}
-                    className="font-bold text-slate-900 mr-1.5 hover:text-blue-600"
-                  >
-                    {post.author.username}
-                  </Link>
-                  {post.caption}
-                </p>
-
-                {post.tags && post.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {post.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        onClick={() => setSearchQuery(tag.replace('#', ''))}
-                        className="text-[11px] text-blue-600 font-medium cursor-pointer hover:underline"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* View Comments trigger */}
-                {post.commentCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => handleOpenComments(post)}
-                    className="text-[11px] text-slate-400 font-medium hover:text-slate-600 pt-0.5"
-                  >
-                    View all {post.commentCount} comments
-                  </button>
-                )}
-              </div>
-            </article>
+            <PostCard
+              key={post.id}
+              post={post}
+              animatingHeart={animatingHeartPostId === post.id}
+              onToggleLike={handleToggleLike}
+              onDoubleTap={handleDoubleTap}
+              onToggleSave={handleToggleSave}
+              onShare={handleShare}
+              onToggleFollow={handleToggleFollow}
+              onOpenComments={handleOpenComments}
+              onSearchTag={(tag) => setSearchQuery(tag)}
+              onReport={handleReport}
+              onRemove={handleRemovePost}
+            />
           ))
         ) : (
           /* Empty Search / Following Tab State */
@@ -798,6 +646,14 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Report Content Bottom Sheet */}
+      <ReportBottomSheet
+        post={reportingPost}
+        isOpen={Boolean(reportingPost)}
+        onClose={() => setReportingPost(null)}
+        onSubmit={handleReportSubmit}
+      />
 
       {/* Interactive Comments Drawer */}
       {activeCommentPost && (

@@ -16,14 +16,12 @@ export function ProfileSkeleton() {
         <div className="mt-3 flex flex-col items-center gap-1.5 w-48">
           <div className="h-5 w-32 bg-slate-200 rounded-md" />
           <div className="h-3.5 w-24 bg-slate-200 rounded-md" />
-          <div className="h-3 w-44 bg-slate-200 rounded-md mt-1" />
-          <div className="h-3 w-36 bg-slate-200 rounded-md" />
         </div>
       </div>
 
       {/* Stats Card Skeleton */}
       <div className="w-full px-5 mt-4 flex justify-center">
-        <div className="w-full max-w-[342px] bg-slate-100 rounded-2xl h-16 border border-slate-200/50" />
+        <div className="w-full max-w-[342px] bg-slate-100 rounded-2xl h-[92px] border border-slate-200/50" />
       </div>
 
       {/* Tabs / Chips Skeleton */}

@@ -21,7 +21,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { UsersService } from './users.service';
+import { UsersService, getOnboardingStatus } from './users.service';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -68,6 +68,15 @@ export class UsersController {
     return this.usersService.checkUsername(u);
   }
 
+  @Get('me')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current authenticated user profile' })
+  @ApiResponse({ status: 200, type: UserProfileResponseDto })
+  async getMe(@CurrentUser() user: any): Promise<UserProfileResponse> {
+    return this.usersService.getProfileByUsername(user.id, user.id);
+  }
+
   @Patch('me/profile')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
@@ -100,6 +109,7 @@ export class UsersController {
       isVerified: updatedUser.isVerified,
       onboardingCompletedAt: updatedUser.onboardingCompletedAt,
       onboardingSkipped: updatedUser.onboardingSkipped,
+      onboardingStatus: getOnboardingStatus(updatedUser),
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
     };

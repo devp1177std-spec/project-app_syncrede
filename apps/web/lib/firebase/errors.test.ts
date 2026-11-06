@@ -36,6 +36,21 @@ test('formatFirebaseAuthError returns friendly message for unauthorized domain',
   );
 });
 
+test('formatFirebaseAuthError returns friendly message for user-token-expired', () => {
+  const msg = formatFirebaseAuthError({ code: 'auth/user-token-expired' });
+  assert.strictEqual(msg, 'Your session has expired. Please sign in again to continue.');
+});
+
+test('formatFirebaseAuthError returns friendly message for raw Firebase Error (auth/user-token-expired)', () => {
+  const msg = formatFirebaseAuthError({ message: 'Firebase: Error (auth/user-token-expired).' });
+  assert.strictEqual(msg, 'Your session has expired. Please sign in again to continue.');
+});
+
+test('formatFirebaseAuthError returns friendly message for id-token-expired', () => {
+  const msg = formatFirebaseAuthError({ code: 'auth/id-token-expired' });
+  assert.strictEqual(msg, 'Your session has expired. Please sign in again to continue.');
+});
+
 test('formatFirebaseAuthError handles fallback for unknown errors', () => {
   const msg = formatFirebaseAuthError({ message: 'Custom server error' });
   assert.strictEqual(msg, 'Custom server error');

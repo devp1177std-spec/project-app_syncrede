@@ -1,0 +1,195 @@
+[
+  {
+    "category": "Route Protection",
+    "testName": "Home page public access & Login button visibility",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:13.404Z",
+    "url": "http://localhost:3000/",
+    "note": "Home page renders with login button on top when user profile is not available"
+  },
+  {
+    "category": "Route Protection",
+    "testName": "Guard route /profile",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:13.555Z",
+    "url": "http://localhost:3000/login?redirect=%2Fprofile",
+    "note": "Properly redirected unauthenticated request to http://localhost:3000/login?redirect=%2Fprofile"
+  },
+  {
+    "category": "Route Protection",
+    "testName": "Guard route /create-profile",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:13.636Z",
+    "url": "http://localhost:3000/login?redirect=%2Fcreate-profile",
+    "note": "Properly redirected unauthenticated request to http://localhost:3000/login?redirect=%2Fcreate-profile"
+  },
+  {
+    "category": "Route Protection",
+    "testName": "Guard route /chat",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:13.715Z",
+    "url": "http://localhost:3000/login?redirect=%2Fchat",
+    "note": "Properly redirected unauthenticated request to http://localhost:3000/login?redirect=%2Fchat"
+  },
+  {
+    "category": "Route Protection",
+    "testName": "Guard route /market",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:13.769Z",
+    "url": "http://localhost:3000/login?redirect=%2Fmarket",
+    "note": "Properly redirected unauthenticated request to http://localhost:3000/login?redirect=%2Fmarket"
+  },
+  {
+    "category": "Route Protection",
+    "testName": "Guard route /social",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:13.824Z",
+    "url": "http://localhost:3000/login?redirect=%2Fsocial",
+    "note": "Properly redirected unauthenticated request to http://localhost:3000/login?redirect=%2Fsocial"
+  },
+  {
+    "category": "Route Protection",
+    "testName": "Guard route /stories",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:13.884Z",
+    "url": "http://localhost:3000/login?redirect=%2Fstories",
+    "note": "Properly redirected unauthenticated request to http://localhost:3000/login?redirect=%2Fstories"
+  },
+  {
+    "category": "Login Form",
+    "testName": "Page elements & social login buttons rendering",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:17.695Z",
+    "note": "All form controls, brand headers, and OAuth buttons are visible and accessible"
+  },
+  {
+    "category": "Login Form",
+    "testName": "Password visibility toggle (mask/unmask)",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:17.743Z",
+    "note": "Switched from password to text"
+  },
+  {
+    "category": "Login Form",
+    "testName": "Empty submission validation enforcement",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:18.354Z",
+    "note": "Validation errors displayed: Email or username is required, Password is required"
+  },
+  {
+    "category": "Login Form",
+    "testName": "Firebase error code mapping (invalid-credential)",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:19.806Z",
+    "note": "Friendly translation verified: \"Invalid email or password. Please verify your details.\""
+  },
+  {
+    "category": "Signup Form",
+    "testName": "All registration controls and inputs rendered",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:21.671Z",
+    "note": "Name, email, username, password, confirmPassword, and terms elements present"
+  },
+  {
+    "category": "Signup Form",
+    "testName": "Comprehensive empty field validation",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:22.287Z",
+    "note": "Field validation messages displayed: 6 (Name must be at least 2 characters, Please enter a valid email address, Username must be at least 3 characters...)"
+  },
+  {
+    "category": "Signup Form",
+    "testName": "Email format & weak password validation",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:22.945Z",
+    "note": "Email and password strength criteria enforced prior to network dispatch"
+  },
+  {
+    "category": "Password Reset",
+    "testName": "Password reset interface rendering",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:24.812Z",
+    "note": "Title, instructions, email input, action button, and back link are visible"
+  },
+  {
+    "category": "Password Reset",
+    "testName": "Reset link dispatch & success confirmation",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:26.281Z",
+    "note": "Success confirmation banner and recovery instructions displayed"
+  },
+  {
+    "category": "Google OAuth",
+    "testName": "Google sign-in button accessibility & branding",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:27.404Z",
+    "note": "Continue with Google button with standard Google 4-color SVG is rendered"
+  },
+  {
+    "category": "Google OAuth",
+    "testName": "Client SDK environment & local storage hygiene",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:27.412Z",
+    "note": "Clean storage initial state: Null (clean)"
+  },
+  {
+    "category": "Google OAuth",
+    "testName": "Popup-based architecture verified (signInWithPopup)",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:27.412Z",
+    "note": "Configured with GoogleAuthProvider, prompt: \"select_account\", and self-healing retry logic"
+  },
+  {
+    "category": "Google OAuth",
+    "testName": "Error recovery on auth/user-token-expired",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:27.412Z",
+    "note": "Verified: loginWithGoogle automatically purges stale tokens and retries cleanly"
+  },
+  {
+    "category": "Session Security",
+    "testName": "CSRF rejection on missing custom headers",
+    "status": 403,
+    "timestamp": "2026-11-06T12:00:27.658Z",
+    "note": "Expected 403 Forbidden, received 403"
+  },
+  {
+    "category": "Session Security",
+    "testName": "Server-side Firebase Admin ID token verification",
+    "status": 401,
+    "timestamp": "2026-11-06T12:00:27.681Z",
+    "note": "Untrusted/invalid token rejected with HTTP 401"
+  },
+  {
+    "category": "Session Security",
+    "testName": "Logout API destroys __session HTTP-only cookie",
+    "status": 200,
+    "timestamp": "2026-11-06T12:00:27.700Z",
+    "note": "Set-Cookie header properly clears __session with zero max-age: true"
+  },
+  {
+    "category": "Session Persistence",
+    "testName": "Middleware redirects authenticated user away from /login",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:28.048Z",
+    "currentUrl": "http://localhost:3000/",
+    "note": "Authenticated user redirected to http://localhost:3000/"
+  },
+  {
+    "category": "Session Persistence",
+    "testName": "Session remains intact after page reload (no logout loops)",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:28.142Z",
+    "note": "State preserved across reload: http://localhost:3000/"
+  },
+  {
+    "category": "Mobile Usability",
+    "testName": "Touch target sizing and layout on mobile viewport",
+    "status": "PASSED",
+    "timestamp": "2026-11-06T12:00:29.423Z",
+    "googleBtnWidth": 327,
+    "googleBtnHeight": 44,
+    "loginBtnWidth": 327,
+    "note": "Touch targets compliant: Google button 327x44px, Login button 327px"
+  }
+]

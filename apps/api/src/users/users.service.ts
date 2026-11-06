@@ -31,6 +31,19 @@ import { CreateVerificationRequestDto, ReviewVerificationDto } from './dto/verif
 
 const RESERVED_USERNAMES = new Set(['admin', 'root', 'support', 'help', 'billing', 'api', 'system']);
 
+export function getOnboardingStatus(user: {
+  onboardingCompletedAt?: Date | string | null;
+  onboardingSkipped?: boolean;
+}): 'COMPLETED' | 'SKIPPED' | 'NOT_COMPLETED' {
+  if (user.onboardingCompletedAt) {
+    return 'COMPLETED';
+  }
+  if (user.onboardingSkipped) {
+    return 'SKIPPED';
+  }
+  return 'NOT_COMPLETED';
+}
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -119,6 +132,8 @@ export class UsersService {
       bio: user.bio,
       avatar: user.image,
       cover: user.coverImage,
+      location: user.location,
+      website: user.website,
       verified: user.isVerified,
       isOnline,
       isPrivate: user.isPrivate,
@@ -126,6 +141,11 @@ export class UsersService {
       followingCount: user.followingCount,
       postCount: user.postCount,
       relationship,
+      ...(user.onboardingCompletedAt !== undefined && { onboardingCompletedAt: user.onboardingCompletedAt }),
+      ...(user.onboardingSkipped !== undefined && { onboardingSkipped: user.onboardingSkipped }),
+      ...((user.onboardingCompletedAt !== undefined || user.onboardingSkipped !== undefined) && {
+        onboardingStatus: getOnboardingStatus(user),
+      }),
     };
   }
 
@@ -1189,6 +1209,7 @@ export class UsersService {
 
   async updateProfile(userId: string, data: OnboardingProfileInput) {
     const updateData: any = {
+      ...(data.name !== undefined && { name: data.name }),
       ...(data.bio !== undefined && { bio: data.bio }),
       ...(data.location !== undefined && { location: data.location }),
       ...(data.website !== undefined && { website: data.website }),
@@ -1219,8 +1240,10 @@ export class UsersService {
 
     if (data.skip) {
       updateData.onboardingSkipped = true;
-    } else {
+      updateData.onboardingCompletedAt = null;
+    } else if (data.completeOnboarding !== false) {
       updateData.onboardingCompletedAt = new Date();
+      updateData.onboardingSkipped = false;
     }
 
     return this.prisma.user.update({

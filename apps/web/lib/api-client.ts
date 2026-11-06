@@ -13,6 +13,7 @@ import {
   StoryViewUserDto,
 } from '@social/types';
 import { OnboardingProfileInput } from '@social/validation';
+import { auth } from '@/lib/firebase/client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -39,8 +40,29 @@ export async function fetchApi<T = unknown>(
   const url = `${cleanBase}/${cleanEndpoint}`;
 
   try {
-    const token = getAuthToken();
-    const res = await fetch(url, {
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      if (!auth.currentUser && typeof auth.authStateReady === 'function') {
+        try {
+          await auth.authStateReady();
+        } catch {
+          // ignore error waiting for auth state ready
+        }
+      }
+
+      if (auth.currentUser) {
+        try {
+          // Automatically fetch valid ID token from Firebase (or silently refreshes if expiring)
+          token = await auth.currentUser.getIdToken(false);
+          setAuthToken(token);
+        } catch {
+          setAuthToken(null);
+          token = null;
+        }
+      }
+    }
+
+    let res = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -49,6 +71,26 @@ export async function fetchApi<T = unknown>(
       },
       credentials: 'include',
     });
+
+    // If 401 Unauthorized occurs, force-refresh the ID token once and retry
+    if (res.status === 401 && typeof window !== 'undefined' && auth.currentUser) {
+      try {
+        const freshToken = await auth.currentUser.getIdToken(true);
+        setAuthToken(freshToken);
+        res = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${freshToken}`,
+            ...options.headers,
+          },
+          credentials: 'include',
+        });
+      } catch {
+        // Force refresh failed, reset token
+        setAuthToken(null);
+      }
+    }
 
     const data = await res.json();
     return data as ApiResponse<T>;
@@ -100,6 +142,10 @@ export const apiClient = {
         method: 'PATCH',
         body: JSON.stringify(data),
       });
+    },
+
+    async getMe(): Promise<ApiResponse<UserProfileResponse>> {
+      return fetchApi<UserProfileResponse>('api/users/me');
     },
 
     async getProfile(username: string): Promise<ApiResponse<UserProfileResponse>> {

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -27,7 +27,7 @@ import { useAvatarUpload } from '@/hooks/use-avatar-upload';
 
 export default function CreateProfilePage() {
   const router = useRouter();
-  const { user, updateProfile, isAuthenticated, isLoading } = useAuth();
+  const { user, updateProfile, isAuthenticated, isOnboarded, onboardingStatus, isLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -76,6 +76,13 @@ export default function CreateProfilePage() {
     }
   }, [isLoading, isAuthenticated, router]);
 
+  // Onboarding guard: already completed or skipped profile -> /
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && (onboardingStatus === 'COMPLETED' || onboardingStatus === 'SKIPPED' || isOnboarded)) {
+      router.push('/');
+    }
+  }, [isLoading, isAuthenticated, onboardingStatus, isOnboarded, router]);
+
   const usernameValue = watch('username') || '';
   const bioValue = watch('bio') || '';
 
@@ -98,11 +105,13 @@ export default function CreateProfilePage() {
     }
 
     const res = await updateProfile({
+      name: data.name || undefined,
       username: data.username || undefined,
       bio: data.bio || undefined,
       location: data.location || undefined,
       website: data.website || undefined,
       avatarUrl: avatarUrl || undefined,
+      completeOnboarding: true,
       skip: false,
     });
 
@@ -125,6 +134,14 @@ export default function CreateProfilePage() {
       router.push('/');
     }
   };
+
+  if (isLoading || (isAuthenticated && (onboardingStatus === 'COMPLETED' || onboardingStatus === 'SKIPPED' || isOnboarded))) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 min-h-[300px]">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col justify-between p-6 pt-2">

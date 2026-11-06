@@ -84,6 +84,39 @@ describe('UsersController', () => {
     });
   });
 
+  describe('getMe', () => {
+    it('should call getProfileByUsername with user id as both target and viewer', async () => {
+      const mockProfile = {
+        id: 'u1',
+        displayName: 'John',
+        username: 'john_doe',
+        bio: 'Hello',
+        avatar: null,
+        cover: null,
+        location: 'SF',
+        website: 'https://john.com',
+        verified: true,
+        isOnline: true,
+        isPrivate: false,
+        followerCount: 10,
+        followingCount: 5,
+        postCount: 2,
+        relationship: {
+          isFollowing: false,
+          isFollowedBy: false,
+          isBlocked: false,
+          requested: false,
+        },
+      };
+
+      mockUsersService.getProfileByUsername.mockResolvedValue(mockProfile);
+
+      const result = await controller.getMe({ id: 'u1' });
+      expect(result).toEqual(mockProfile);
+      expect(mockUsersService.getProfileByUsername).toHaveBeenCalledWith('u1', 'u1');
+    });
+  });
+
   // ==========================================
   // POSTS GRID ENDPOINT
   // ==========================================

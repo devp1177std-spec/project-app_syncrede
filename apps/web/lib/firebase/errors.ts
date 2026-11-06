@@ -5,6 +5,16 @@ export function formatFirebaseAuthError(error: any): string {
   if (!error) return 'An unexpected error occurred. Please try again.';
 
   const code: string = error?.code || '';
+  const message: string = error?.message || '';
+
+  if (
+    code === 'auth/user-token-expired' ||
+    code.includes('user-token-expired') ||
+    message.includes('auth/user-token-expired') ||
+    message.includes('user-token-expired')
+  ) {
+    return 'Your session has expired. Please sign in again to continue.';
+  }
 
   switch (code) {
     case 'auth/invalid-email':
@@ -38,8 +48,13 @@ export function formatFirebaseAuthError(error: any): string {
       return 'Too many unsuccessful attempts. Access has been temporarily disabled. Please try again later.';
     case 'auth/network-request-failed':
       return 'Network connection error. Please verify your internet connection.';
-    case 'auth/requires-recent-login':
-      return 'Please log in again before performing this sensitive action.';
+    case 'auth/user-token-expired':
+    case 'auth/id-token-expired':
+    case 'auth/id-token-revoked':
+    case 'auth/invalid-user-token':
+      return 'Your session has expired. Please sign in again to continue.';
+    case 'auth/cancelled-popup-request':
+      return 'Previous sign-in request was cancelled. Please try again.';
     case 'auth/expired-action-code':
       return 'This password reset link has expired. Please request a new one.';
     case 'auth/invalid-action-code':

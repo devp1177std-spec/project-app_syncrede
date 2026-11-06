@@ -39,6 +39,12 @@ export class UserProfileResponseDto {
   @ApiProperty({ example: 'https://cdn.example.com/covers/alex-cover.jpg', nullable: true })
   cover: string | null;
 
+  @ApiPropertyOptional({ example: 'San Francisco, CA', nullable: true })
+  location?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://alexmorgan.design', nullable: true })
+  website?: string | null;
+
   @ApiProperty({ example: true })
   verified: boolean;
 
@@ -59,6 +65,15 @@ export class UserProfileResponseDto {
 
   @ApiProperty({ type: () => UserRelationshipDto })
   relationship: UserRelationshipDto;
+
+  @ApiPropertyOptional({ example: '2026-11-06T10:00:00.000Z', nullable: true })
+  onboardingCompletedAt?: Date | string | null;
+
+  @ApiPropertyOptional({ example: false })
+  onboardingSkipped?: boolean;
+
+  @ApiPropertyOptional({ enum: ['COMPLETED', 'SKIPPED', 'NOT_COMPLETED'], example: 'COMPLETED' })
+  onboardingStatus?: 'COMPLETED' | 'SKIPPED' | 'NOT_COMPLETED';
 }
 
 export class UserGridPostItemDto {

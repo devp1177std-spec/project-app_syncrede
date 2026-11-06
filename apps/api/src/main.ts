@@ -3,8 +3,14 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { verifyDependencies } from './common/dependency-check';
 
 async function bootstrap() {
+  const isReady = await verifyDependencies('API');
+  if (!isReady) {
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   const pinoLogger = app.get(Logger);
